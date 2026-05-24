@@ -1,26 +1,18 @@
-import multer from 'multer';
-import cloudinary from '../config/cloudinary';
-import { Readable } from 'stream';
+import multer from "multer";
+import cloudinary from "../config/cloudinary";
+import { Readable } from "stream";
 
-// Set up memory storage for Multer
 const storage = multer.memoryStorage();
 
-// Ensure only images are uploaded
-const fileFilter = (req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
-  if (file.mimetype.startsWith('image/')) {
-    cb(null, true);
-  } else {
-    cb(new Error('Invalid file type. Only image files are allowed.') as any, false);
-  }
-};
-
-export const upload = multer({
+const upload = multer({
   storage,
-  fileFilter,
   limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB limit
-  },
+    fileSize: 5 * 1024 * 1024
+  }
 });
+
+export { upload };
+export default upload;
 
 export interface CloudinaryUploadResponse {
   secure_url: string;

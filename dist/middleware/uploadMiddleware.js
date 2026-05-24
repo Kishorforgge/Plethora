@@ -7,24 +7,15 @@ exports.deleteFromCloudinary = exports.uploadToCloudinary = exports.upload = voi
 const multer_1 = __importDefault(require("multer"));
 const cloudinary_1 = __importDefault(require("../config/cloudinary"));
 const stream_1 = require("stream");
-// Set up memory storage for Multer
 const storage = multer_1.default.memoryStorage();
-// Ensure only images are uploaded
-const fileFilter = (req, file, cb) => {
-    if (file.mimetype.startsWith('image/')) {
-        cb(null, true);
-    }
-    else {
-        cb(new Error('Invalid file type. Only image files are allowed.'), false);
-    }
-};
-exports.upload = (0, multer_1.default)({
+const upload = (0, multer_1.default)({
     storage,
-    fileFilter,
     limits: {
-        fileSize: 10 * 1024 * 1024, // 10MB limit
-    },
+        fileSize: 5 * 1024 * 1024
+    }
 });
+exports.upload = upload;
+exports.default = upload;
 /**
  * Uploads a file buffer directly to Cloudinary using a readable stream.
  * @param fileBuffer The buffer of the uploaded file

@@ -9,11 +9,11 @@ const router = (0, express_1.Router)();
 router.get('/', authMiddleware_1.optionalProtect, postController_1.getPosts);
 router.get('/:id', authMiddleware_1.optionalProtect, postController_1.getPostById);
 // Protected routes
-router.post('/upload', authMiddleware_1.protect, uploadMiddleware_1.upload.single('image'), postController_1.createPost);
-router.delete('/:id', authMiddleware_1.protect, postController_1.deletePost);
-router.post('/:id/like', authMiddleware_1.protect, postController_1.likePost);
-router.post('/:id/unlike', authMiddleware_1.protect, postController_1.unlikePost);
-router.post('/:id/bookmark', authMiddleware_1.protect, postController_1.bookmarkPost);
-router.post('/:id/unbookmark', authMiddleware_1.protect, postController_1.unbookmarkPost);
+router.post('/upload', uploadMiddleware_1.upload.single('image'), postController_1.createPost);
+router.delete('/:id', postController_1.deletePost);
+router.post('/:id/like', postController_1.likePost);
+router.post('/:id/unlike', postController_1.unlikePost);
+router.post('/:id/bookmark', postController_1.bookmarkPost);
+router.post('/:id/unbookmark', postController_1.unbookmarkPost);
 exports.default = router;
 //# sourceMappingURL=postRoutes.js.map

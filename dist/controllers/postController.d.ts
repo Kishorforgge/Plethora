@@ -29,22 +29,22 @@ export declare const deletePost: (req: AuthRequest, res: Response, next: NextFun
  * @route   POST /api/posts/:id/like
  * @access  Private
  */
-export declare const likePost: (req: AuthRequest, res: Response, next: NextFunction) => Promise<void | Response<any, Record<string, any>>>;
+export declare const likePost: (req: AuthRequest, res: Response, next: NextFunction) => Promise<void>;
 /**
  * @desc    Unlike a post
  * @route   POST /api/posts/:id/unlike
  * @access  Private
  */
-export declare const unlikePost: (req: AuthRequest, res: Response, next: NextFunction) => Promise<void | Response<any, Record<string, any>>>;
+export declare const unlikePost: (req: AuthRequest, res: Response, next: NextFunction) => Promise<void>;
 /**
  * @desc    Bookmark a post
  * @route   POST /api/posts/:id/bookmark
  * @access  Private
  */
-export declare const bookmarkPost: (req: AuthRequest, res: Response, next: NextFunction) => Promise<void | Response<any, Record<string, any>>>;
+export declare const bookmarkPost: (req: AuthRequest, res: Response, next: NextFunction) => Promise<void>;
 /**
  * @desc    Unbookmark a post
  * @route   POST /api/posts/:id/unbookmark
  * @access  Private
  */
-export declare const unbookmarkPost: (req: AuthRequest, res: Response, next: NextFunction) => Promise<void | Response<any, Record<string, any>>>;
+export declare const unbookmarkPost: (req: AuthRequest, res: Response, next: NextFunction) => Promise<void>;

@@ -11,15 +11,20 @@ const app_1 = __importDefault(require("./app"));
 const db_1 = require("./config/db");
 const PORT = process.env.PORT || 5000;
 const startServer = async () => {
-    // Connect to Database
-    await (0, db_1.connectDB)();
-    // Start Express server
-    app_1.default.listen(PORT, () => {
-        console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode on http://localhost:${PORT}`);
-    });
+    try {
+        // Connect database
+        await (0, db_1.connectDB)();
+        // Start server
+        app_1.default.listen(PORT, () => {
+            console.log(`Server running in ${process.env.NODE_ENV || "development"} mode on http://localhost:${PORT}`);
+        });
+    }
+    catch (error) {
+        console.error("Server startup error:", error);
+        process.exit(1);
+    }
 };
-// Handle unhandled promise rejections
-process.on('unhandledRejection', (err) => {
+process.on("unhandledRejection", (err) => {
     console.error(`Unhandled Rejection Error: ${err.message}`);
 });
 startServer();
