@@ -7,6 +7,7 @@ export interface IUser extends Document {
     bio: string;
     profilePicture: string;
     cloudinaryId?: string;
+    googleId?: string;
     followers: Types.ObjectId[];
     following: Types.ObjectId[];
     bookmarks: Types.ObjectId[];
