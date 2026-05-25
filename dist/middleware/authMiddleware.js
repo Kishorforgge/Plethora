@@ -7,6 +7,10 @@ exports.optionalProtect = exports.protect = void 0;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const User_1 = require("../models/User");
 const protect = async (req, res, next) => {
+    // If user is already authenticated via Passport session, proceed
+    if (req.user) {
+        return next();
+    }
     let token;
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
         try {
@@ -37,6 +41,10 @@ const protect = async (req, res, next) => {
 };
 exports.protect = protect;
 const optionalProtect = async (req, res, next) => {
+    // If user is already authenticated via Passport session, proceed
+    if (req.user) {
+        return next();
+    }
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
         try {
             const token = req.headers.authorization.split(' ')[1];

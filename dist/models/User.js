@@ -25,8 +25,12 @@ const UserSchema = new mongoose_1.Schema({
     },
     password: {
         type: String,
-        required: [true, 'Password is required'],
+        required: false,
         select: false, // Don't return password by default in queries
+    },
+    googleId: {
+        type: String,
+        default: '',
     },
     fullName: {
         type: String,

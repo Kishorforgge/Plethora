@@ -3,9 +3,13 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+/// <reference path="./types/express/index.d.ts" />
 const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
 const dotenv_1 = __importDefault(require("dotenv"));
+const express_session_1 = __importDefault(require("express-session"));
+const passport_1 = __importDefault(require("passport"));
+require("./config/passport");
 const authRoutes_1 = __importDefault(require("./routes/authRoutes"));
 const userRoutes_1 = __importDefault(require("./routes/userRoutes"));
 const postRoutes_1 = __importDefault(require("./routes/postRoutes"));
@@ -27,12 +31,26 @@ app.use((0, cors_1.default)({
 // Body parsers
 app.use(express_1.default.json());
 app.use(express_1.default.urlencoded({ extended: true }));
+// Session Configuration
+app.use((0, express_session_1.default)({
+    secret: process.env.SESSION_SECRET || 'plethora-session-secret-key',
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    },
+}));
+// Initialize Passport
+app.use(passport_1.default.initialize());
+app.use(passport_1.default.session());
 // Test Route
 app.get('/', (req, res) => {
     res.json({ message: 'Plethora Backend API is running...' });
 });
 // Register API Routes
 app.use('/api/auth', authRoutes_1.default);
+app.use('/auth', authRoutes_1.default);
 app.use('/api/users', userRoutes_1.default);
 app.use('/api/posts', postRoutes_1.default);
 app.use('/api/comments', commentRoutes_1.default);

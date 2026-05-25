@@ -12,6 +12,11 @@ interface JwtPayload {
 }
 
 export const protect = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  // If user is already authenticated via Passport session, proceed
+  if (req.user) {
+    return next();
+  }
+
   let token: string | undefined;
 
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
@@ -45,6 +50,11 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
 };
 
 export const optionalProtect = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  // If user is already authenticated via Passport session, proceed
+  if (req.user) {
+    return next();
+  }
+
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
     try {
       const token = req.headers.authorization.split(' ')[1];

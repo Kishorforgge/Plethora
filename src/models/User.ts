@@ -9,6 +9,7 @@ export interface IUser extends Document {
   bio: string;
   profilePicture: string;
   cloudinaryId?: string;
+  googleId?: string;
   followers: Types.ObjectId[];
   following: Types.ObjectId[];
   bookmarks: Types.ObjectId[];
@@ -37,8 +38,12 @@ const UserSchema = new Schema<IUser>(
     },
     password: {
       type: String,
-      required: [true, 'Password is required'],
+      required: false,
       select: false, // Don't return password by default in queries
+    },
+    googleId: {
+      type: String,
+      default: '',
     },
     fullName: {
       type: String,
