@@ -6,6 +6,9 @@ import {
   unfollowUser,
   searchUsers,
   getUserProfile,
+  getSuggestedCreators,
+  getMyFollowers,
+  getMyFollowing,
 } from '../controllers/userController';
 import { protect, optionalProtect } from '../middleware/authMiddleware';
 import { upload } from '../middleware/uploadMiddleware';
@@ -14,7 +17,10 @@ import { validateProfileUpdate } from '../middleware/validateMiddleware';
 const router = Router();
 
 // Public routes (or optionally authenticated)
-router.get('/search', searchUsers);
+router.get('/search', optionalProtect, searchUsers);
+router.get('/suggested', protect, getSuggestedCreators);
+router.get('/me/followers', protect, getMyFollowers);
+router.get('/me/following', protect, getMyFollowing);
 router.get('/:username', optionalProtect, getUserProfile);
 
 // Protected routes

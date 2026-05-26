@@ -195,11 +195,127 @@ export const unfollowUser = async (req: AuthRequest, res: Response, next: NextFu
 };
 
 /**
+ * @desc    Suggested creators to follow (sorted by popularity)
+ * @route   GET /api/users/suggested
+ * @access  Private
+ */
+export const getSuggestedCreators = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    if (!req.user) {
+      res.status(401);
+      return next(new Error('Not authorized.'));
+    }
+
+    const users = await User.find({ _id: { $ne: req.user._id } })
+      .select('username fullName profilePicture bio followers following')
+      .limit(40);
+
+    const sorted = users
+      .sort((a, b) => b.followers.length - a.followers.length)
+      .slice(0, 12)
+      .map((u) => ({
+        _id: u._id,
+        username: u.username,
+        fullName: u.fullName,
+        bio: u.bio,
+        profilePicture: u.profilePicture,
+        followersCount: u.followers.length,
+        followingCount: u.following.length,
+        isFollowing: req.user!.following.some((id) => id.toString() === u._id.toString()),
+      }));
+
+    res.status(200).json({
+      status: 'success',
+      results: sorted.length,
+      data: sorted,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Get current user's followers list
+ * @route   GET /api/users/me/followers
+ * @access  Private
+ */
+export const getMyFollowers = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    if (!req.user) {
+      res.status(401);
+      return next(new Error('Not authorized.'));
+    }
+
+    const user = await User.findById(req.user._id).populate(
+      'followers',
+      'username fullName profilePicture'
+    );
+    if (!user) {
+      res.status(404);
+      return next(new Error('User not found.'));
+    }
+
+    const followers = (user.followers as any[]).map((f) => ({
+      _id: f._id,
+      username: f.username,
+      fullName: f.fullName,
+      profilePicture: f.profilePicture,
+    }));
+
+    res.status(200).json({
+      status: 'success',
+      results: followers.length,
+      data: followers,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Get current user's following list
+ * @route   GET /api/users/me/following
+ * @access  Private
+ */
+export const getMyFollowing = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    if (!req.user) {
+      res.status(401);
+      return next(new Error('Not authorized.'));
+    }
+
+    const user = await User.findById(req.user._id).populate(
+      'following',
+      'username fullName profilePicture'
+    );
+    if (!user) {
+      res.status(404);
+      return next(new Error('User not found.'));
+    }
+
+    const following = (user.following as any[]).map((f) => ({
+      _id: f._id,
+      username: f.username,
+      fullName: f.fullName,
+      profilePicture: f.profilePicture,
+    }));
+
+    res.status(200).json({
+      status: 'success',
+      results: following.length,
+      data: following,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * @desc    Search users by username or fullName
  * @route   GET /api/users/search
  * @access  Public (or Private, typically accessible)
  */
-export const searchUsers = async (req: Request, res: Response, next: NextFunction) => {
+export const searchUsers = async (req: AuthRequest, res: Response, next: NextFunction) => {
   const query = req.query.q as string;
 
   try {
@@ -224,6 +340,9 @@ export const searchUsers = async (req: Request, res: Response, next: NextFunctio
       profilePicture: u.profilePicture,
       followersCount: u.followers.length,
       followingCount: u.following.length,
+      isFollowing: req.user
+        ? req.user.following.some((id) => id.toString() === u._id.toString())
+        : false,
     }));
 
     res.status(200).json({

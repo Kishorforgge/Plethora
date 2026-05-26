@@ -1,7 +1,6 @@
 import { Response, NextFunction } from 'express';
 import { AuthRequest } from '../middleware/authMiddleware';
 import { PostService } from '../services/postService';
-import { User } from '../models/User';
 
 /**
  * @desc    Upload an image post
@@ -17,27 +16,13 @@ export const createPost = async (req: AuthRequest, res: Response, next: NextFunc
       return next(new Error('Please provide an image file to upload.'));
     }
 
-    // Temporary testing mode
-    // Remove after OAuth/JWT integration is complete
-    let userId: string;
-    if (req.user) {
-      userId = req.user._id.toString();
-    } else {
-      let fallbackUser = await User.findOne({ username: 'fallback_tester' });
-      if (!fallbackUser) {
-        fallbackUser = await User.create({
-          username: 'fallback_tester',
-          email: 'fallback@test.com',
-          password: 'password123',
-          fullName: 'Fallback Tester',
-          bio: 'Temporary testing account'
-        });
-      }
-      userId = fallbackUser._id.toString();
+    if (!req.user) {
+      res.status(401);
+      return next(new Error('Not authorized.'));
     }
 
     const post = await PostService.createPost(
-      userId,
+      req.user._id.toString(),
       req.file.buffer,
       caption,
       tags
@@ -57,6 +42,33 @@ export const createPost = async (req: AuthRequest, res: Response, next: NextFunc
  * @route   GET /api/posts
  * @access  Public (Optional Authentication to populate user-specific like/bookmark states)
  */
+export const getFollowingFeed = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    if (!req.user) {
+      res.status(401);
+      return next(new Error('Not authorized.'));
+    }
+
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 20;
+
+    const { posts, pagination } = await PostService.getFollowingFeed({
+      page,
+      limit,
+      currentUser: req.user,
+    });
+
+    res.status(200).json({
+      status: 'success',
+      results: posts.length,
+      pagination,
+      data: posts,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const getPosts = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
@@ -223,6 +235,46 @@ export const bookmarkPost = async (req: AuthRequest, res: Response, next: NextFu
  * @route   POST /api/posts/:id/unbookmark
  * @access  Private
  */
+export const getMyUploads = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    if (!req.user) {
+      res.status(401);
+      return next(new Error('Not authorized.'));
+    }
+    const posts = await PostService.getPostsByUser(req.user._id.toString(), req.user);
+    res.status(200).json({ status: 'success', results: posts.length, data: posts });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getMySaved = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    if (!req.user) {
+      res.status(401);
+      return next(new Error('Not authorized.'));
+    }
+    const posts = await PostService.getSavedPosts(req.user._id.toString(), req.user);
+    res.status(200).json({ status: 'success', results: posts.length, data: posts });
+  } catch (error) {
+    if ((error as any).statusCode) res.status((error as any).statusCode);
+    next(error);
+  }
+};
+
+export const getMyLiked = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    if (!req.user) {
+      res.status(401);
+      return next(new Error('Not authorized.'));
+    }
+    const posts = await PostService.getLikedPosts(req.user._id.toString(), req.user);
+    res.status(200).json({ status: 'success', results: posts.length, data: posts });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const unbookmarkPost = async (req: AuthRequest, res: Response, next: NextFunction) => {
   const { id } = req.params;
 

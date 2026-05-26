@@ -10,6 +10,7 @@ import userRoutes from './routes/userRoutes';
 import postRoutes from './routes/postRoutes';
 import commentRoutes from './routes/commentRoutes';
 import notificationRoutes from './routes/notificationRoutes';
+import discussionRoutes from './routes/discussionRoutes';
 import { notFound, errorHandler } from './middleware/errorMiddleware';
 import dns from "dns";
 
@@ -62,6 +63,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/posts', postRoutes);
 app.use('/api/comments', commentRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/discussions', discussionRoutes);
 
 // Error Handling Middleware
 app.use(notFound);

@@ -47,6 +47,18 @@ export class PostService {
       tags: tagList,
     });
 
+    // Notify followers about new work (Instagram-style)
+    const author = await User.findById(userId).select('followers');
+    if (author && author.followers.length > 0) {
+      const notifications = author.followers.map((followerId) => ({
+        sender: userId,
+        receiver: followerId,
+        type: 'new_post' as const,
+        post: post._id,
+      }));
+      await Notification.insertMany(notifications);
+    }
+
     return post;
   }
 
@@ -114,6 +126,61 @@ export class PostService {
         totalPages,
         totalPosts,
         hasMore,
+      },
+    };
+  }
+
+  /**
+   * Posts from creators the current user follows (home / following feed).
+   */
+  public static async getFollowingFeed(options: {
+    page: number;
+    limit: number;
+    currentUser: { _id: Types.ObjectId; bookmarks: Types.ObjectId[]; following: Types.ObjectId[] };
+  }) {
+    const { page, limit, currentUser } = options;
+    const followingIds = currentUser.following || [];
+
+    if (followingIds.length === 0) {
+      return {
+        posts: [],
+        pagination: { page, limit, totalPages: 0, totalPosts: 0, hasMore: false },
+      };
+    }
+
+    const skip = (page - 1) * limit;
+    const filter = { user: { $in: followingIds } };
+
+    const totalPosts = await Post.countDocuments(filter);
+    const posts = await Post.find(filter)
+      .populate('user', 'username fullName profilePicture')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    const formattedPosts = posts.map((post) => {
+      const isLiked = post.likes.some((id) => id.toString() === currentUser._id.toString());
+      const isBookmarked = currentUser.bookmarks.some(
+        (id) => id.toString() === post._id.toString()
+      );
+      return {
+        ...post.toObject(),
+        isLiked,
+        isBookmarked,
+        likesCount: post.likes.length,
+      };
+    });
+
+    const totalPages = Math.ceil(totalPosts / limit);
+
+    return {
+      posts: formattedPosts,
+      pagination: {
+        page,
+        limit,
+        totalPages,
+        totalPosts,
+        hasMore: page < totalPages,
       },
     };
   }
@@ -296,5 +363,49 @@ export class PostService {
 
     user.bookmarks = user.bookmarks.filter((id) => id.toString() !== postId);
     await user.save();
+  }
+
+  private static formatPostsForUser(posts: IPost[], currentUser?: { _id: Types.ObjectId; bookmarks: Types.ObjectId[] }) {
+    return posts.map((post) => {
+      const isLiked = currentUser
+        ? post.likes.some((id) => id.toString() === currentUser._id.toString())
+        : false;
+      const isBookmarked = currentUser
+        ? currentUser.bookmarks.some((id) => id.toString() === post._id.toString())
+        : false;
+      return {
+        ...post.toObject(),
+        isLiked,
+        isBookmarked,
+        likesCount: post.likes.length,
+      };
+    });
+  }
+
+  public static async getPostsByUser(userId: string, currentUser?: any) {
+    const posts = await Post.find({ user: userId })
+      .populate('user', 'username fullName profilePicture')
+      .sort({ createdAt: -1 });
+    return this.formatPostsForUser(posts, currentUser);
+  }
+
+  public static async getSavedPosts(userId: string, currentUser?: any) {
+    const user = await User.findById(userId);
+    if (!user) {
+      const error = new Error('User not found.');
+      (error as any).statusCode = 404;
+      throw error;
+    }
+    const posts = await Post.find({ _id: { $in: user.bookmarks } })
+      .populate('user', 'username fullName profilePicture')
+      .sort({ createdAt: -1 });
+    return this.formatPostsForUser(posts, currentUser);
+  }
+
+  public static async getLikedPosts(userId: string, currentUser?: any) {
+    const posts = await Post.find({ likes: userId })
+      .populate('user', 'username fullName profilePicture')
+      .sort({ createdAt: -1 });
+    return this.formatPostsForUser(posts, currentUser);
   }
 }
