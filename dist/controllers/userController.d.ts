@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from 'express';
+import { Response, NextFunction } from 'express';
 import { AuthRequest } from '../middleware/authMiddleware';
 /**
  * @desc    Edit user profile (fullName, bio)
@@ -25,11 +25,29 @@ export declare const followUser: (req: AuthRequest, res: Response, next: NextFun
  */
 export declare const unfollowUser: (req: AuthRequest, res: Response, next: NextFunction) => Promise<void | Response<any, Record<string, any>>>;
 /**
+ * @desc    Suggested creators to follow (sorted by popularity)
+ * @route   GET /api/users/suggested
+ * @access  Private
+ */
+export declare const getSuggestedCreators: (req: AuthRequest, res: Response, next: NextFunction) => Promise<void>;
+/**
+ * @desc    Get current user's followers list
+ * @route   GET /api/users/me/followers
+ * @access  Private
+ */
+export declare const getMyFollowers: (req: AuthRequest, res: Response, next: NextFunction) => Promise<void>;
+/**
+ * @desc    Get current user's following list
+ * @route   GET /api/users/me/following
+ * @access  Private
+ */
+export declare const getMyFollowing: (req: AuthRequest, res: Response, next: NextFunction) => Promise<void>;
+/**
  * @desc    Search users by username or fullName
  * @route   GET /api/users/search
  * @access  Public (or Private, typically accessible)
  */
-export declare const searchUsers: (req: Request, res: Response, next: NextFunction) => Promise<Response<any, Record<string, any>> | undefined>;
+export declare const searchUsers: (req: AuthRequest, res: Response, next: NextFunction) => Promise<Response<any, Record<string, any>> | undefined>;
 /**
  * @desc    Get user profile by username
  * @route   GET /api/users/:username

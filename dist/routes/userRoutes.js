@@ -7,7 +7,10 @@ const uploadMiddleware_1 = require("../middleware/uploadMiddleware");
 const validateMiddleware_1 = require("../middleware/validateMiddleware");
 const router = (0, express_1.Router)();
 // Public routes (or optionally authenticated)
-router.get('/search', userController_1.searchUsers);
+router.get('/search', authMiddleware_1.optionalProtect, userController_1.searchUsers);
+router.get('/suggested', authMiddleware_1.protect, userController_1.getSuggestedCreators);
+router.get('/me/followers', authMiddleware_1.protect, userController_1.getMyFollowers);
+router.get('/me/following', authMiddleware_1.protect, userController_1.getMyFollowing);
 router.get('/:username', authMiddleware_1.optionalProtect, userController_1.getUserProfile);
 // Protected routes
 router.put('/profile', authMiddleware_1.protect, validateMiddleware_1.validateProfileUpdate, userController_1.updateProfile);
