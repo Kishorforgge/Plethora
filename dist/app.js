@@ -15,7 +15,6 @@ const userRoutes_1 = __importDefault(require("./routes/userRoutes"));
 const postRoutes_1 = __importDefault(require("./routes/postRoutes"));
 const commentRoutes_1 = __importDefault(require("./routes/commentRoutes"));
 const notificationRoutes_1 = __importDefault(require("./routes/notificationRoutes"));
-const discussionRoutes_1 = __importDefault(require("./routes/discussionRoutes"));
 const errorMiddleware_1 = require("./middleware/errorMiddleware");
 const dns_1 = __importDefault(require("dns"));
 dns_1.default.setDefaultResultOrder("ipv4first");
@@ -51,11 +50,11 @@ app.get('/', (req, res) => {
 });
 // Register API Routes
 app.use('/api/auth', authRoutes_1.default);
+app.use('/auth', authRoutes_1.default);
 app.use('/api/users', userRoutes_1.default);
 app.use('/api/posts', postRoutes_1.default);
 app.use('/api/comments', commentRoutes_1.default);
 app.use('/api/notifications', notificationRoutes_1.default);
-app.use('/api/discussions', discussionRoutes_1.default);
 // Error Handling Middleware
 app.use(errorMiddleware_1.notFound);
 app.use(errorMiddleware_1.errorHandler);

@@ -11,7 +11,6 @@ export declare const createPost: (req: AuthRequest, res: Response, next: NextFun
  * @route   GET /api/posts
  * @access  Public (Optional Authentication to populate user-specific like/bookmark states)
  */
-export declare const getFollowingFeed: (req: AuthRequest, res: Response, next: NextFunction) => Promise<void>;
 export declare const getPosts: (req: AuthRequest, res: Response, next: NextFunction) => Promise<void>;
 /**
  * @desc    Fetch a single post by ID
@@ -48,7 +47,4 @@ export declare const bookmarkPost: (req: AuthRequest, res: Response, next: NextF
  * @route   POST /api/posts/:id/unbookmark
  * @access  Private
  */
-export declare const getMyUploads: (req: AuthRequest, res: Response, next: NextFunction) => Promise<void>;
-export declare const getMySaved: (req: AuthRequest, res: Response, next: NextFunction) => Promise<void>;
-export declare const getMyLiked: (req: AuthRequest, res: Response, next: NextFunction) => Promise<void>;
 export declare const unbookmarkPost: (req: AuthRequest, res: Response, next: NextFunction) => Promise<void>;

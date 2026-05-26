@@ -21,7 +21,7 @@ passport_1.default.deserializeUser(async (id, done) => {
 passport_1.default.use(new passport_google_oauth20_1.Strategy({
     clientID: process.env.GOOGLE_CLIENT_ID || 'dummy_client_id',
     clientSecret: process.env.GOOGLE_CLIENT_SECRET || 'dummy_client_secret',
-    callbackURL: 'http://localhost:5000/api/auth/google/callback',
+    callbackURL: '/api/auth/google/callback',
     proxy: true,
 }, async (accessToken, refreshToken, profile, done) => {
     try {

@@ -1,7 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.unbookmarkPost = exports.getMyLiked = exports.getMySaved = exports.getMyUploads = exports.bookmarkPost = exports.unlikePost = exports.likePost = exports.deletePost = exports.getPostById = exports.getPosts = exports.getFollowingFeed = exports.createPost = void 0;
+exports.unbookmarkPost = exports.bookmarkPost = exports.unlikePost = exports.likePost = exports.deletePost = exports.getPostById = exports.getPosts = exports.createPost = void 0;
 const postService_1 = require("../services/postService");
+const User_1 = require("../models/User");
 /**
  * @desc    Upload an image post
  * @route   POST /api/posts/upload
@@ -14,11 +15,26 @@ const createPost = async (req, res, next) => {
             res.status(400);
             return next(new Error('Please provide an image file to upload.'));
         }
-        if (!req.user) {
-            res.status(401);
-            return next(new Error('Not authorized.'));
+        // Temporary testing mode
+        // Remove after OAuth/JWT integration is complete
+        let userId;
+        if (req.user) {
+            userId = req.user._id.toString();
         }
-        const post = await postService_1.PostService.createPost(req.user._id.toString(), req.file.buffer, caption, tags);
+        else {
+            let fallbackUser = await User_1.User.findOne({ username: 'fallback_tester' });
+            if (!fallbackUser) {
+                fallbackUser = await User_1.User.create({
+                    username: 'fallback_tester',
+                    email: 'fallback@test.com',
+                    password: 'password123',
+                    fullName: 'Fallback Tester',
+                    bio: 'Temporary testing account'
+                });
+            }
+            userId = fallbackUser._id.toString();
+        }
+        const post = await postService_1.PostService.createPost(userId, req.file.buffer, caption, tags);
         res.status(201).json({
             status: 'success',
             data: post,
@@ -34,31 +50,6 @@ exports.createPost = createPost;
  * @route   GET /api/posts
  * @access  Public (Optional Authentication to populate user-specific like/bookmark states)
  */
-const getFollowingFeed = async (req, res, next) => {
-    try {
-        if (!req.user) {
-            res.status(401);
-            return next(new Error('Not authorized.'));
-        }
-        const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 20;
-        const { posts, pagination } = await postService_1.PostService.getFollowingFeed({
-            page,
-            limit,
-            currentUser: req.user,
-        });
-        res.status(200).json({
-            status: 'success',
-            results: posts.length,
-            pagination,
-            data: posts,
-        });
-    }
-    catch (error) {
-        next(error);
-    }
-};
-exports.getFollowingFeed = getFollowingFeed;
 const getPosts = async (req, res, next) => {
     try {
         const page = parseInt(req.query.page) || 1;
@@ -215,50 +206,6 @@ exports.bookmarkPost = bookmarkPost;
  * @route   POST /api/posts/:id/unbookmark
  * @access  Private
  */
-const getMyUploads = async (req, res, next) => {
-    try {
-        if (!req.user) {
-            res.status(401);
-            return next(new Error('Not authorized.'));
-        }
-        const posts = await postService_1.PostService.getPostsByUser(req.user._id.toString(), req.user);
-        res.status(200).json({ status: 'success', results: posts.length, data: posts });
-    }
-    catch (error) {
-        next(error);
-    }
-};
-exports.getMyUploads = getMyUploads;
-const getMySaved = async (req, res, next) => {
-    try {
-        if (!req.user) {
-            res.status(401);
-            return next(new Error('Not authorized.'));
-        }
-        const posts = await postService_1.PostService.getSavedPosts(req.user._id.toString(), req.user);
-        res.status(200).json({ status: 'success', results: posts.length, data: posts });
-    }
-    catch (error) {
-        if (error.statusCode)
-            res.status(error.statusCode);
-        next(error);
-    }
-};
-exports.getMySaved = getMySaved;
-const getMyLiked = async (req, res, next) => {
-    try {
-        if (!req.user) {
-            res.status(401);
-            return next(new Error('Not authorized.'));
-        }
-        const posts = await postService_1.PostService.getLikedPosts(req.user._id.toString(), req.user);
-        res.status(200).json({ status: 'success', results: posts.length, data: posts });
-    }
-    catch (error) {
-        next(error);
-    }
-};
-exports.getMyLiked = getMyLiked;
 const unbookmarkPost = async (req, res, next) => {
     const { id } = req.params;
     try {

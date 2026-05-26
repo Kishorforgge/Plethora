@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getUserProfile = exports.searchUsers = exports.getMyFollowing = exports.getMyFollowers = exports.getSuggestedCreators = exports.unfollowUser = exports.followUser = exports.updateProfilePicture = exports.updateProfile = void 0;
+exports.getUserProfile = exports.searchUsers = exports.unfollowUser = exports.followUser = exports.updateProfilePicture = exports.updateProfile = void 0;
 const User_1 = require("../models/User");
 const Notification_1 = require("../models/Notification");
 const uploadMiddleware_1 = require("../middleware/uploadMiddleware");
@@ -171,110 +171,6 @@ const unfollowUser = async (req, res, next) => {
 };
 exports.unfollowUser = unfollowUser;
 /**
- * @desc    Suggested creators to follow (sorted by popularity)
- * @route   GET /api/users/suggested
- * @access  Private
- */
-const getSuggestedCreators = async (req, res, next) => {
-    try {
-        if (!req.user) {
-            res.status(401);
-            return next(new Error('Not authorized.'));
-        }
-        const users = await User_1.User.find({ _id: { $ne: req.user._id } })
-            .select('username fullName profilePicture bio followers following')
-            .limit(40);
-        const sorted = users
-            .sort((a, b) => b.followers.length - a.followers.length)
-            .slice(0, 12)
-            .map((u) => ({
-            _id: u._id,
-            username: u.username,
-            fullName: u.fullName,
-            bio: u.bio,
-            profilePicture: u.profilePicture,
-            followersCount: u.followers.length,
-            followingCount: u.following.length,
-            isFollowing: req.user.following.some((id) => id.toString() === u._id.toString()),
-        }));
-        res.status(200).json({
-            status: 'success',
-            results: sorted.length,
-            data: sorted,
-        });
-    }
-    catch (error) {
-        next(error);
-    }
-};
-exports.getSuggestedCreators = getSuggestedCreators;
-/**
- * @desc    Get current user's followers list
- * @route   GET /api/users/me/followers
- * @access  Private
- */
-const getMyFollowers = async (req, res, next) => {
-    try {
-        if (!req.user) {
-            res.status(401);
-            return next(new Error('Not authorized.'));
-        }
-        const user = await User_1.User.findById(req.user._id).populate('followers', 'username fullName profilePicture');
-        if (!user) {
-            res.status(404);
-            return next(new Error('User not found.'));
-        }
-        const followers = user.followers.map((f) => ({
-            _id: f._id,
-            username: f.username,
-            fullName: f.fullName,
-            profilePicture: f.profilePicture,
-        }));
-        res.status(200).json({
-            status: 'success',
-            results: followers.length,
-            data: followers,
-        });
-    }
-    catch (error) {
-        next(error);
-    }
-};
-exports.getMyFollowers = getMyFollowers;
-/**
- * @desc    Get current user's following list
- * @route   GET /api/users/me/following
- * @access  Private
- */
-const getMyFollowing = async (req, res, next) => {
-    try {
-        if (!req.user) {
-            res.status(401);
-            return next(new Error('Not authorized.'));
-        }
-        const user = await User_1.User.findById(req.user._id).populate('following', 'username fullName profilePicture');
-        if (!user) {
-            res.status(404);
-            return next(new Error('User not found.'));
-        }
-        const following = user.following.map((f) => ({
-            _id: f._id,
-            username: f.username,
-            fullName: f.fullName,
-            profilePicture: f.profilePicture,
-        }));
-        res.status(200).json({
-            status: 'success',
-            results: following.length,
-            data: following,
-        });
-    }
-    catch (error) {
-        next(error);
-    }
-};
-exports.getMyFollowing = getMyFollowing;
-/**
  * @desc    Search users by username or fullName
  * @route   GET /api/users/search
  * @access  Public (or Private, typically accessible)
@@ -301,9 +197,6 @@ const searchUsers = async (req, res, next) => {
             profilePicture: u.profilePicture,
             followersCount: u.followers.length,
             followingCount: u.following.length,
-            isFollowing: req.user
-                ? req.user.following.some((id) => id.toString() === u._id.toString())
-                : false,
         }));
         res.status(200).json({
             status: 'success',

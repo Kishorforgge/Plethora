@@ -55,52 +55,6 @@ export declare class PostService {
         };
     }>;
     /**
-     * Posts from creators the current user follows (home / following feed).
-     */
-    static getFollowingFeed(options: {
-        page: number;
-        limit: number;
-        currentUser: {
-            _id: Types.ObjectId;
-            bookmarks: Types.ObjectId[];
-            following: Types.ObjectId[];
-        };
-    }): Promise<{
-        posts: {
-            isLiked: boolean;
-            isBookmarked: boolean;
-            likesCount: number;
-            user: Types.ObjectId;
-            imageUrl: string;
-            cloudinaryId: string;
-            caption: string;
-            tags: string[];
-            likes: Types.ObjectId[];
-            commentsCount: number;
-            createdAt: Date;
-            updatedAt: Date;
-            _id: Types.ObjectId;
-            $locals: Record<string, unknown>;
-            $op: "save" | "validate" | "remove" | null;
-            $where: Record<string, unknown>;
-            baseModelName?: string;
-            collection: import("mongoose").Collection;
-            db: import("mongoose").Connection;
-            errors?: import("mongoose").Error.ValidationError;
-            id?: any;
-            isNew: boolean;
-            schema: import("mongoose").Schema;
-            __v: number;
-        }[];
-        pagination: {
-            page: number;
-            limit: number;
-            totalPages: number;
-            totalPosts: number;
-            hasMore: boolean;
-        };
-    }>;
-    /**
      * Fetches a single post by ID with optional current-user contextual statuses.
      */
     static getPostById(postId: string, currentUser?: any): Promise<{
@@ -149,8 +103,4 @@ export declare class PostService {
      * Unbookmarks a post for the user.
      */
     static unbookmarkPost(postId: string, userId: string): Promise<void>;
-    private static formatPostsForUser;
-    static getPostsByUser(userId: string, currentUser?: any): Promise<any[]>;
-    static getSavedPosts(userId: string, currentUser?: any): Promise<any[]>;
-    static getLikedPosts(userId: string, currentUser?: any): Promise<any[]>;
 }
