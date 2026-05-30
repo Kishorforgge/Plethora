@@ -7,7 +7,6 @@ dist/
 # Environment & secrets (JWT, OAuth, DB, Cloudinary, session, etc.)
 .env
 .env.*
-!.env.example
 
 # Logs & debug
 logs/
