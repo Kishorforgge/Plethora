@@ -2,7 +2,7 @@ import { Document, Types } from 'mongoose';
 export interface INotification extends Document {
     sender: Types.ObjectId;
     receiver: Types.ObjectId;
-    type: 'like' | 'comment' | 'follow';
+    type: 'like' | 'comment' | 'follow' | 'new_post';
     post?: Types.ObjectId;
     comment?: Types.ObjectId;
     isRead: boolean;

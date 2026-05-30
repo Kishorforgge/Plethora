@@ -14,9 +14,15 @@ const startServer = async () => {
     try {
         // Connect database
         await (0, db_1.connectDB)();
-        // Start server
-        app_1.default.listen(PORT, () => {
+        const server = app_1.default.listen(PORT, () => {
             console.log(`Server running in ${process.env.NODE_ENV || "development"} mode on http://localhost:${PORT}`);
+        });
+        server.on("error", (err) => {
+            if (err.code === "EADDRINUSE") {
+                console.error(`Port ${PORT} is already in use. Stop the other server (or run: netstat -ano | findstr :${PORT}) or set a different PORT in .env`);
+                process.exit(1);
+            }
+            throw err;
         });
     }
     catch (error) {
