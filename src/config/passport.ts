@@ -20,7 +20,7 @@ passport.use(
     {
       clientID: process.env.GOOGLE_CLIENT_ID || 'dummy_client_id',
       clientSecret: process.env.GOOGLE_CLIENT_SECRET || 'dummy_client_secret',
-      callbackURL: 'http://localhost:5000/api/auth/google/callback',
+      callbackURL: 'https://plethora-p5ei.onrender.com/api/auth/google/callback',
       proxy: true,
     },
     async (accessToken, refreshToken, profile, done) => {
