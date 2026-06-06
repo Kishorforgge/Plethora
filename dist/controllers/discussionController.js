@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.sendMessage = exports.getConversationMessages = exports.createConversation = exports.getMyConversations = void 0;
+exports.deleteMessage = exports.editMessage = exports.sendMessage = exports.getConversationMessages = exports.createConversation = exports.getMyConversations = void 0;
 const Conversation_1 = require("../models/Conversation");
 const Message_1 = require("../models/Message");
 const User_1 = require("../models/User");
@@ -165,4 +165,68 @@ const sendMessage = async (req, res, next) => {
     }
 };
 exports.sendMessage = sendMessage;
+/**
+ * @desc    Edit a message in a conversation
+ * @route   PATCH /api/discussions/messages/:messageId
+ * @access  Private
+ */
+const editMessage = async (req, res, next) => {
+    const { text } = req.body;
+    try {
+        if (!req.user) {
+            res.status(401);
+            return next(new Error('Not authorized.'));
+        }
+        if (!text || typeof text !== 'string' || !text.trim()) {
+            res.status(400);
+            return next(new Error('Message text is required.'));
+        }
+        const message = await Message_1.Message.findById(req.params.messageId);
+        if (!message) {
+            res.status(404);
+            return next(new Error('Message not found.'));
+        }
+        if (message.sender.toString() !== req.user._id.toString()) {
+            res.status(403);
+            return next(new Error('You are not authorized to edit this message.'));
+        }
+        message.text = text.trim();
+        message.edited = true;
+        await message.save();
+        const populated = await Message_1.Message.findById(message._id).populate('sender', 'username fullName profilePicture');
+        res.status(200).json({ status: 'success', data: populated });
+    }
+    catch (error) {
+        next(error);
+    }
+};
+exports.editMessage = editMessage;
+/**
+ * @desc    Delete a message in a conversation
+ * @route   DELETE /api/discussions/messages/:messageId
+ * @access  Private
+ */
+const deleteMessage = async (req, res, next) => {
+    try {
+        if (!req.user) {
+            res.status(401);
+            return next(new Error('Not authorized.'));
+        }
+        const message = await Message_1.Message.findById(req.params.messageId);
+        if (!message) {
+            res.status(404);
+            return next(new Error('Message not found.'));
+        }
+        if (message.sender.toString() !== req.user._id.toString()) {
+            res.status(403);
+            return next(new Error('You are not authorized to delete this message.'));
+        }
+        await message.deleteOne();
+        res.status(200).json({ status: 'success', data: null });
+    }
+    catch (error) {
+        next(error);
+    }
+};
+exports.deleteMessage = deleteMessage;
 //# sourceMappingURL=discussionController.js.map

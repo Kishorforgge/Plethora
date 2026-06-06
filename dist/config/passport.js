@@ -18,10 +18,17 @@ passport_1.default.deserializeUser(async (id, done) => {
         done(error, null);
     }
 });
+const googleCallbackUrl = process.env.GOOGLE_CALLBACK_URL ||
+    'http://localhost:5000/api/auth/google/callback';
+console.log("================ Google OAuth Configuration ================");
+console.log("GOOGLE_CLIENT_ID =", process.env.GOOGLE_CLIENT_ID ? `${process.env.GOOGLE_CLIENT_ID.substring(0, 15)}...` : "undefined");
+console.log("GOOGLE_CALLBACK_URL =", googleCallbackUrl);
+console.log("Google Strategy initialized.");
+console.log("============================================================");
 passport_1.default.use(new passport_google_oauth20_1.Strategy({
     clientID: process.env.GOOGLE_CLIENT_ID || 'dummy_client_id',
     clientSecret: process.env.GOOGLE_CLIENT_SECRET || 'dummy_client_secret',
-    callbackURL: 'http://localhost:5000/api/auth/google/callback',
+    callbackURL: googleCallbackUrl,
     proxy: true,
 }, async (accessToken, refreshToken, profile, done) => {
     try {

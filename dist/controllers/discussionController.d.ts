@@ -24,3 +24,15 @@ export declare const getConversationMessages: (req: AuthRequest, res: Response, 
  * @access  Private
  */
 export declare const sendMessage: (req: AuthRequest, res: Response, next: NextFunction) => Promise<void>;
+/**
+ * @desc    Edit a message in a conversation
+ * @route   PATCH /api/discussions/messages/:messageId
+ * @access  Private
+ */
+export declare const editMessage: (req: AuthRequest, res: Response, next: NextFunction) => Promise<void>;
+/**
+ * @desc    Delete a message in a conversation
+ * @route   DELETE /api/discussions/messages/:messageId
+ * @access  Private
+ */
+export declare const deleteMessage: (req: AuthRequest, res: Response, next: NextFunction) => Promise<void>;

@@ -3,6 +3,7 @@ export interface IMessage extends Document {
     conversation: Types.ObjectId;
     sender: Types.ObjectId;
     text: string;
+    edited: boolean;
     createdAt: Date;
     updatedAt: Date;
 }

@@ -10,9 +10,12 @@ export interface IUser extends Document {
   profilePicture: string;
   cloudinaryId?: string;
   googleId?: string;
+  isVerified: boolean;
   followers: Types.ObjectId[];
   following: Types.ObjectId[];
   bookmarks: Types.ObjectId[];
+  blockedUsers: Types.ObjectId[];
+  mutedUsers: Types.ObjectId[];
   createdAt: Date;
   updatedAt: Date;
   matchPassword(enteredPassword: string): Promise<boolean>;
@@ -61,6 +64,10 @@ const UserSchema = new Schema<IUser>(
       type: String,
       default: '',
     },
+    isVerified: {
+      type: Boolean,
+      default: false,
+    },
     followers: [
       {
         type: Schema.Types.ObjectId,
@@ -77,6 +84,18 @@ const UserSchema = new Schema<IUser>(
       {
         type: Schema.Types.ObjectId,
         ref: 'Post',
+      },
+    ],
+    blockedUsers: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+      },
+    ],
+    mutedUsers: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: 'User',
       },
     ],
   },
@@ -108,5 +127,7 @@ UserSchema.methods.matchPassword = async function (enteredPassword: string): Pro
   }
   return bcrypt.compare(enteredPassword, this.password);
 };
+
+UserSchema.index({ username: 'text' });
 
 export const User = model<IUser>('User', UserSchema);
