@@ -36,6 +36,8 @@ const startServer = async () => {
         `Server running in ${process.env.NODE_ENV || "development"
         } mode on http://localhost:${PORT}`
       );
+      console.log(`[Config] CLIENT_URL: ${process.env.CLIENT_URL}`);
+      console.log(`[Config] GOOGLE_CALLBACK_URL: ${process.env.GOOGLE_CALLBACK_URL}`);
     });
 
     server.on("error", (err: NodeJS.ErrnoException) => {

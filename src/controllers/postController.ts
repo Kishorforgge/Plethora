@@ -163,7 +163,7 @@ export const likePost = async (req: AuthRequest, res: Response, next: NextFuncti
     res.status(200).json({
       status: 'success',
       message: 'Post liked successfully.',
-      likesCount,
+      data: { likesCount },
     });
   } catch (error) {
     if ((error as any).statusCode) {
@@ -192,7 +192,7 @@ export const unlikePost = async (req: AuthRequest, res: Response, next: NextFunc
     res.status(200).json({
       status: 'success',
       message: 'Post unliked successfully.',
-      likesCount,
+      data: { likesCount },
     });
   } catch (error) {
     if ((error as any).statusCode) {

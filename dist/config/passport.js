@@ -31,6 +31,7 @@ passport_1.default.use(new passport_google_oauth20_1.Strategy({
     callbackURL: googleCallbackUrl,
     proxy: true,
 }, async (accessToken, refreshToken, profile, done) => {
+    console.log(`[Passport GoogleStrategy Callback] Authenticating user from Google profile. ID: ${profile.id}, Email: ${profile.emails?.[0]?.value}`);
     try {
         // 1. Check if user already exists with this googleId
         let user = await User_1.User.findOne({ googleId: profile.id });

@@ -16,6 +16,8 @@ const startServer = async () => {
         await (0, db_1.connectDB)();
         const server = app_1.default.listen(PORT, () => {
             console.log(`Server running in ${process.env.NODE_ENV || "development"} mode on http://localhost:${PORT}`);
+            console.log(`[Config] CLIENT_URL: ${process.env.CLIENT_URL}`);
+            console.log(`[Config] GOOGLE_CALLBACK_URL: ${process.env.GOOGLE_CALLBACK_URL}`);
         });
         server.on("error", (err) => {
             if (err.code === "EADDRINUSE") {
