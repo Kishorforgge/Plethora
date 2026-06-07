@@ -297,3 +297,24 @@ export const unbookmarkPost = async (req: AuthRequest, res: Response, next: Next
     next(error);
   }
 };
+
+/**
+ * @desc    Fetch uploads by user ID
+ * @route   GET /api/posts/user/:userId/uploads
+ * @access  Public (Optional auth)
+ */
+export const getUserUploads = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  const { userId } = req.params;
+
+  try {
+    const posts = await PostService.getPostsByUser(userId, req.user);
+    res.status(200).json({
+      status: 'success',
+      results: posts.length,
+      data: posts,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+

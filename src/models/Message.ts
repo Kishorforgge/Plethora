@@ -4,6 +4,8 @@ export interface IMessage extends Document {
   conversation: Types.ObjectId;
   sender: Types.ObjectId;
   text: string;
+  edited: boolean;
+  read: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -26,6 +28,14 @@ const MessageSchema = new Schema<IMessage>(
       required: [true, 'Message text is required'],
       trim: true,
       maxlength: 2000,
+    },
+    edited: {
+      type: Boolean,
+      default: false,
+    },
+    read: {
+      type: Boolean,
+      default: false,
     },
   },
   { timestamps: true }

@@ -9,5 +9,7 @@ router.get('/', discussionController_1.getMyConversations);
 router.post('/', discussionController_1.createConversation);
 router.get('/:id/messages', discussionController_1.getConversationMessages);
 router.post('/:id/messages', discussionController_1.sendMessage);
+router.patch('/messages/:messageId', discussionController_1.editMessage);
+router.delete('/messages/:messageId', discussionController_1.deleteMessage);
 exports.default = router;
 //# sourceMappingURL=discussionRoutes.js.map

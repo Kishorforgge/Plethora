@@ -18,25 +18,31 @@ router.get('/me', authMiddleware_1.protect, authController_1.getMe);
 router.get('/google', passport_1.default.authenticate('google', { scope: ['profile', 'email'] }));
 // Google OAuth callback route
 router.get('/google/callback', (req, res, next) => {
-    const clientUrl = (process.env.CLIENT_URL || 'http://localhost:8080').replace(/\/$/, '');
-    console.log(`[Google OAuth Callback] Route triggered. CLIENT_URL config: ${process.env.CLIENT_URL}, Normalized clientUrl: ${clientUrl}`);
-    next();
-}, passport_1.default.authenticate('google', {
-    failureRedirect: `${(process.env.CLIENT_URL || 'http://localhost:8080').replace(/\/$/, '')}/login?error=oauth_failed`
-}), (req, res) => {
-    const clientUrl = (process.env.CLIENT_URL || 'http://localhost:8080').replace(/\/$/, '');
+    const rawClientUrl = process.env.CLIENT_URL || 'http://localhost:8080';
+    const clientUrl = rawClientUrl.endsWith('/') ? rawClientUrl.slice(0, -1) : rawClientUrl;
+    passport_1.default.authenticate('google', {
+        failureRedirect: `${clientUrl}/login?error=oauth_failed`,
+    })(req, res, next);
+}, (req, res) => {
+    const rawClientUrl = process.env.CLIENT_URL || 'http://localhost:8080';
+    const clientUrl = rawClientUrl.endsWith('/') ? rawClientUrl.slice(0, -1) : rawClientUrl;
     if (req.user) {
         const token = (0, generateToken_1.generateToken)(req.user._id.toString());
-        console.log(`[Google OAuth Callback] Success: Generated JWT token: ${token}`);
-        const redirectUrl = `${clientUrl}/login-success?token=${token}`;
-        console.log(`[Google OAuth Callback] Redirecting user to: ${redirectUrl}`);
-        res.redirect(redirectUrl);
+        console.log("================ Google OAuth Callback Success ================");
+        console.log("CLIENT_URL (raw) =", process.env.CLIENT_URL);
+        console.log("CLIENT_URL (normalized) =", clientUrl);
+        console.log("GOOGLE_CALLBACK_URL =", process.env.GOOGLE_CALLBACK_URL || 'http://localhost:5000/api/auth/google/callback');
+        console.log("Generated JWT Token =", token);
+        console.log("Redirect URL =", `${clientUrl}/login-success?token=${token}`);
+        console.log("===============================================================");
+        res.redirect(`${clientUrl}/login-success?token=${token}`);
     }
     else {
-        console.error('[Google OAuth Callback] Failure: No req.user found.');
-        const redirectUrl = `${clientUrl}/login?error=no_user`;
-        console.log(`[Google OAuth Callback] Redirecting user to: ${redirectUrl}`);
-        res.redirect(redirectUrl);
+        console.log("================ Google OAuth Callback Failure ================");
+        console.log("No user found in session.");
+        console.log("Redirecting to /login?error=no_user");
+        console.log("===============================================================");
+        res.redirect(`${clientUrl}/login?error=no_user`);
     }
 });
 exports.default = router;

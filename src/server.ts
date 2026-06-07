@@ -4,8 +4,10 @@ dns.setDefaultResultOrder("ipv4first");
 import dotenv from "dotenv";
 dotenv.config();
 
+import http from "http";
 import app from "./app";
 import { connectDB } from "./config/db";
+import { initSocket } from "./socket";
 
 const PORT = process.env.PORT || 5000;
 
@@ -14,10 +16,24 @@ const startServer = async () => {
     // Connect database
     await connectDB();
 
-    const server = app.listen(PORT, () => {
+    const server = http.createServer(app);
+
+    // Get allowed origins matching app config
+    const rawClientUrl = process.env.CLIENT_URL || 'http://localhost:8080';
+    const clientUrl = rawClientUrl.endsWith('/') ? rawClientUrl.slice(0, -1) : rawClientUrl;
+    const allowedOrigins = [
+      clientUrl,
+      'http://localhost:8080',
+      'http://localhost:5173',
+      'http://localhost:3000'
+    ];
+
+    // Initialize Socket.IO
+    initSocket(server, allowedOrigins);
+
+    server.listen(PORT, () => {
       console.log(
-        `Server running in ${
-          process.env.NODE_ENV || "development"
+        `Server running in ${process.env.NODE_ENV || "development"
         } mode on http://localhost:${PORT}`
       );
       console.log(`[Config] CLIENT_URL: ${process.env.CLIENT_URL}`);

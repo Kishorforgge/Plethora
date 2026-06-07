@@ -12,6 +12,7 @@ import {
   getMySaved,
   getMyLiked,
   getFollowingFeed,
+  getUserUploads,
 } from '../controllers/postController';
 import { protect, optionalProtect } from '../middleware/authMiddleware';
 import { upload } from '../middleware/uploadMiddleware';
@@ -24,6 +25,7 @@ router.get('/following', protect, getFollowingFeed);
 router.get('/me/uploads', protect, getMyUploads);
 router.get('/me/saved', protect, getMySaved);
 router.get('/me/liked', protect, getMyLiked);
+router.get('/user/:userId/uploads', optionalProtect, getUserUploads);
 router.get('/:id', optionalProtect, getPostById);
 
 // Protected routes

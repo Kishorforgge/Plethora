@@ -20,25 +20,37 @@ const errorMiddleware_1 = require("./middleware/errorMiddleware");
 const dns_1 = __importDefault(require("dns"));
 dns_1.default.setDefaultResultOrder("ipv4first");
 dotenv_1.default.config();
+const rawClientUrl = process.env.CLIENT_URL || 'http://localhost:8080';
+const clientUrl = rawClientUrl.endsWith('/') ? rawClientUrl.slice(0, -1) : rawClientUrl;
+console.log("================ Backend Initialization ================");
+console.log("Environment CLIENT_URL =", process.env.CLIENT_URL);
+console.log("Normalized clientUrl =", clientUrl);
+console.log("GOOGLE_CALLBACK_URL =", process.env.GOOGLE_CALLBACK_URL);
+console.log("========================================================");
 const app = (0, express_1.default)();
 // Configure CORS
-const clientUrl = (process.env.CLIENT_URL || 'http://localhost:8080').replace(/\/$/, '');
 const allowedOrigins = [
     clientUrl,
     'http://localhost:8080',
     'http://localhost:5173',
     'http://localhost:3000'
-].map(o => o.replace(/\/$/, ''));
+];
 app.use((0, cors_1.default)({
     origin: (origin, callback) => {
+        // Allow requests with no origin (like mobile apps or curl requests)
         if (!origin)
             return callback(null, true);
-        const normalizedOrigin = origin.replace(/\/$/, '');
-        if (allowedOrigins.includes(normalizedOrigin)) {
+        const normalizedOrigin = origin.endsWith('/') ? origin.slice(0, -1) : origin;
+        const isAllowed = allowedOrigins.some(o => {
+            const normalizedO = o.endsWith('/') ? o.slice(0, -1) : o;
+            return normalizedO.toLowerCase() === normalizedOrigin.toLowerCase();
+        });
+        if (isAllowed) {
             callback(null, true);
         }
         else {
-            callback(null, false);
+            console.warn(`[CORS Blocked] Origin: ${origin} is not allowed. Allowed origins:`, allowedOrigins);
+            callback(new Error('Not allowed by CORS'));
         }
     },
     credentials: true,
