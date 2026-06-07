@@ -15,15 +15,19 @@ passport.deserializeUser(async (id: string, done) => {
   }
 });
 
+const callbackURL = process.env.GOOGLE_CALLBACK_URL || 'http://localhost:5000/api/auth/google/callback';
+console.log(`[Passport GoogleStrategy] Initialized with callbackURL: ${callbackURL}`);
+
 passport.use(
   new GoogleStrategy(
     {
       clientID: process.env.GOOGLE_CLIENT_ID || 'dummy_client_id',
       clientSecret: process.env.GOOGLE_CLIENT_SECRET || 'dummy_client_secret',
-      callbackURL: 'https://plethora-p5ei.onrender.com/api/auth/google/callback',
+      callbackURL: callbackURL,
       proxy: true,
     },
     async (accessToken, refreshToken, profile, done) => {
+      console.log(`[Passport GoogleStrategy Callback] Authenticating user from Google profile. ID: ${profile.id}, Email: ${profile.emails?.[0]?.value}`);
       try {
         // 1. Check if user already exists with this googleId
         let user = await User.findOne({ googleId: profile.id });

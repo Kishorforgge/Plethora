@@ -77,11 +77,26 @@ export class PostService {
 
     const filter: any = {};
 
-    // Search filter (text search or regex in caption/tags)
+    // Search filter (text search or regex in caption/tags, creator name/username, and comments text)
     if (searchQuery) {
+      // Find matching comments
+      const comments = await Comment.find({ text: { $regex: searchQuery, $options: 'i' } }).select('post');
+      const postIdsFromComments = comments.map((c) => c.post);
+
+      // Find matching users (authors)
+      const users = await User.find({
+        $or: [
+          { username: { $regex: searchQuery, $options: 'i' } },
+          { fullName: { $regex: searchQuery, $options: 'i' } },
+        ],
+      }).select('_id');
+      const userIds = users.map((u) => u._id);
+
       filter.$or = [
         { caption: { $regex: searchQuery, $options: 'i' } },
         { tags: { $regex: searchQuery, $options: 'i' } },
+        { user: { $in: userIds } },
+        { _id: { $in: postIdsFromComments } },
       ];
     }
 

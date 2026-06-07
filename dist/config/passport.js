@@ -18,12 +18,15 @@ passport_1.default.deserializeUser(async (id, done) => {
         done(error, null);
     }
 });
+const callbackURL = process.env.GOOGLE_CALLBACK_URL || 'http://localhost:5000/api/auth/google/callback';
+console.log(`[Passport GoogleStrategy] Initialized with callbackURL: ${callbackURL}`);
 passport_1.default.use(new passport_google_oauth20_1.Strategy({
     clientID: process.env.GOOGLE_CLIENT_ID || 'dummy_client_id',
     clientSecret: process.env.GOOGLE_CLIENT_SECRET || 'dummy_client_secret',
-    callbackURL: 'http://localhost:5000/api/auth/google/callback',
+    callbackURL: callbackURL,
     proxy: true,
 }, async (accessToken, refreshToken, profile, done) => {
+    console.log(`[Passport GoogleStrategy Callback] Authenticating user from Google profile. ID: ${profile.id}, Email: ${profile.emails?.[0]?.value}`);
     try {
         // 1. Check if user already exists with this googleId
         let user = await User_1.User.findOne({ googleId: profile.id });

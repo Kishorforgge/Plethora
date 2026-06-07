@@ -23,13 +23,28 @@ router.get('/google', passport.authenticate('google', { scope: ['profile', 'emai
 // Google OAuth callback route
 router.get(
   '/google/callback',
-  passport.authenticate('google', { failureRedirect: `${process.env.CLIENT_URL || 'http://localhost:5173'}/login?error=oauth_failed` }),
+  (req, res, next) => {
+    const clientUrl = (process.env.CLIENT_URL || 'http://localhost:8080').replace(/\/$/, '');
+    console.log(`[Google OAuth Callback] Route triggered. CLIENT_URL config: ${process.env.CLIENT_URL}, Normalized clientUrl: ${clientUrl}`);
+    next();
+  },
+  passport.authenticate('google', { 
+    failureRedirect: `${(process.env.CLIENT_URL || 'http://localhost:8080').replace(/\/$/, '')}/login?error=oauth_failed` 
+  }),
   (req, res) => {
+    const clientUrl = (process.env.CLIENT_URL || 'http://localhost:8080').replace(/\/$/, '');
+    
     if (req.user) {
       const token = generateToken(req.user._id.toString());
-      res.redirect(`${process.env.CLIENT_URL || 'http://localhost:5173'}/login-success?token=${token}`);
+      console.log(`[Google OAuth Callback] Success: Generated JWT token: ${token}`);
+      const redirectUrl = `${clientUrl}/login-success?token=${token}`;
+      console.log(`[Google OAuth Callback] Redirecting user to: ${redirectUrl}`);
+      res.redirect(redirectUrl);
     } else {
-      res.redirect(`${process.env.CLIENT_URL || 'http://localhost:5173'}/login?error=no_user`);
+      console.error('[Google OAuth Callback] Failure: No req.user found.');
+      const redirectUrl = `${clientUrl}/login?error=no_user`;
+      console.log(`[Google OAuth Callback] Redirecting user to: ${redirectUrl}`);
+      res.redirect(redirectUrl);
     }
   }
 );

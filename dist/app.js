@@ -22,9 +22,25 @@ dns_1.default.setDefaultResultOrder("ipv4first");
 dotenv_1.default.config();
 const app = (0, express_1.default)();
 // Configure CORS
-const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+const clientUrl = (process.env.CLIENT_URL || 'http://localhost:8080').replace(/\/$/, '');
+const allowedOrigins = [
+    clientUrl,
+    'http://localhost:8080',
+    'http://localhost:5173',
+    'http://localhost:3000'
+].map(o => o.replace(/\/$/, ''));
 app.use((0, cors_1.default)({
-    origin: [clientUrl, 'http://localhost:3000'], // fallback to Vite default or standard local hosts
+    origin: (origin, callback) => {
+        if (!origin)
+            return callback(null, true);
+        const normalizedOrigin = origin.replace(/\/$/, '');
+        if (allowedOrigins.includes(normalizedOrigin)) {
+            callback(null, true);
+        }
+        else {
+            callback(null, false);
+        }
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
