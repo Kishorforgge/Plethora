@@ -52,3 +52,9 @@ export declare const getMyUploads: (req: AuthRequest, res: Response, next: NextF
 export declare const getMySaved: (req: AuthRequest, res: Response, next: NextFunction) => Promise<void>;
 export declare const getMyLiked: (req: AuthRequest, res: Response, next: NextFunction) => Promise<void>;
 export declare const unbookmarkPost: (req: AuthRequest, res: Response, next: NextFunction) => Promise<void>;
+/**
+ * @desc    Fetch uploads by user ID
+ * @route   GET /api/posts/user/:userId/uploads
+ * @access  Public (Optional auth)
+ */
+export declare const getUserUploads: (req: AuthRequest, res: Response, next: NextFunction) => Promise<void>;

@@ -8,9 +8,12 @@ export interface IUser extends Document {
     profilePicture: string;
     cloudinaryId?: string;
     googleId?: string;
+    isVerified: boolean;
     followers: Types.ObjectId[];
     following: Types.ObjectId[];
     bookmarks: Types.ObjectId[];
+    blockedUsers: Types.ObjectId[];
+    mutedUsers: Types.ObjectId[];
     createdAt: Date;
     updatedAt: Date;
     matchPassword(enteredPassword: string): Promise<boolean>;

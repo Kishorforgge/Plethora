@@ -2,6 +2,7 @@ import { Document, Types } from 'mongoose';
 export interface IConversation extends Document {
     title: string;
     participants: Types.ObjectId[];
+    isPublic: boolean;
     lastMessageAt: Date;
     createdAt: Date;
     updatedAt: Date;

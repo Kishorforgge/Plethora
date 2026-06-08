@@ -16,6 +16,7 @@ const postRoutes_1 = __importDefault(require("./routes/postRoutes"));
 const commentRoutes_1 = __importDefault(require("./routes/commentRoutes"));
 const notificationRoutes_1 = __importDefault(require("./routes/notificationRoutes"));
 const discussionRoutes_1 = __importDefault(require("./routes/discussionRoutes"));
+const messageRoutes_1 = __importDefault(require("./routes/messageRoutes"));
 const errorMiddleware_1 = require("./middleware/errorMiddleware");
 const dns_1 = __importDefault(require("dns"));
 dns_1.default.setDefaultResultOrder("ipv4first");
@@ -54,7 +55,7 @@ app.use((0, cors_1.default)({
         }
     },
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 // Body parsers
@@ -84,6 +85,7 @@ app.use('/api/posts', postRoutes_1.default);
 app.use('/api/comments', commentRoutes_1.default);
 app.use('/api/notifications', notificationRoutes_1.default);
 app.use('/api/discussions', discussionRoutes_1.default);
+app.use('/api/messages', messageRoutes_1.default);
 // Error Handling Middleware
 app.use(errorMiddleware_1.notFound);
 app.use(errorMiddleware_1.errorHandler);

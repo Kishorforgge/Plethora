@@ -1,9 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getUserProfile = exports.searchUsers = exports.getMyFollowing = exports.getMyFollowers = exports.getSuggestedCreators = exports.unfollowUser = exports.followUser = exports.updateProfilePicture = exports.updateProfile = void 0;
+exports.getUserProfileByUsername = exports.unmuteUser = exports.muteUser = exports.unblockUser = exports.blockUser = exports.removeFollower = exports.searchFollowersAndFollowing = exports.getUserFollowing = exports.getUserFollowers = exports.getUserProfile = exports.searchUsers = exports.getMyFollowing = exports.getMyFollowers = exports.getSuggestedCreators = exports.unfollowUser = exports.followUser = exports.updateProfilePicture = exports.updateProfile = void 0;
 const User_1 = require("../models/User");
+const Post_1 = require("../models/Post");
 const Notification_1 = require("../models/Notification");
 const uploadMiddleware_1 = require("../middleware/uploadMiddleware");
+const socket_1 = require("../socket");
 /**
  * @desc    Edit user profile (fullName, bio)
  * @route   PUT /api/users/profile
@@ -117,6 +119,12 @@ const followUser = async (req, res, next) => {
             receiver: targetUser._id,
             type: 'follow',
         });
+        // Broadcast follow update in real-time
+        (0, socket_1.broadcastEvent)('follow_update', {
+            followerId: currentUser._id.toString(),
+            followingId: targetUser._id.toString(),
+            action: 'follow',
+        });
         res.status(200).json({
             status: 'success',
             message: `You are now following ${targetUser.username}.`,
@@ -159,6 +167,12 @@ const unfollowUser = async (req, res, next) => {
             sender: currentUser._id,
             receiver: targetUser._id,
             type: 'follow',
+        });
+        // Broadcast unfollow update in real-time
+        (0, socket_1.broadcastEvent)('follow_update', {
+            followerId: currentUser._id.toString(),
+            followingId: targetUser._id.toString(),
+            action: 'unfollow',
         });
         res.status(200).json({
             status: 'success',
@@ -354,4 +368,329 @@ const getUserProfile = async (req, res, next) => {
     }
 };
 exports.getUserProfile = getUserProfile;
+/**
+ * @desc    Get followers of any user (by userId)
+ * @route   GET /api/users/:userId/followers
+ * @access  Private
+ */
+const getUserFollowers = async (req, res, next) => {
+    const { userId } = req.params;
+    try {
+        const user = await User_1.User.findById(userId).populate('followers', 'username fullName profilePicture isVerified');
+        if (!user) {
+            res.status(404);
+            return next(new Error('User not found.'));
+        }
+        const currentUser = req.user ? await User_1.User.findById(req.user._id) : null;
+        const blockedIds = currentUser?.blockedUsers?.map((id) => id.toString()) || [];
+        const mutedIds = currentUser?.mutedUsers?.map((id) => id.toString()) || [];
+        const followers = user.followers.map((f) => ({
+            _id: f._id,
+            username: f.username,
+            fullName: f.fullName,
+            profilePicture: f.profilePicture,
+            isVerified: f.isVerified || false,
+            isFollowing: req.user ? req.user.following.some((id) => id.toString() === f._id.toString()) : false,
+            isBlocked: blockedIds.includes(f._id.toString()),
+            isMuted: mutedIds.includes(f._id.toString()),
+        }));
+        res.status(200).json({ status: 'success', data: followers });
+    }
+    catch (error) {
+        next(error);
+    }
+};
+exports.getUserFollowers = getUserFollowers;
+/**
+ * @desc    Get following of any user (by userId)
+ * @route   GET /api/users/:userId/following
+ * @access  Private
+ */
+const getUserFollowing = async (req, res, next) => {
+    const { userId } = req.params;
+    try {
+        const user = await User_1.User.findById(userId).populate('following', 'username fullName profilePicture isVerified');
+        if (!user) {
+            res.status(404);
+            return next(new Error('User not found.'));
+        }
+        const currentUser = req.user ? await User_1.User.findById(req.user._id) : null;
+        const blockedIds = currentUser?.blockedUsers?.map((id) => id.toString()) || [];
+        const mutedIds = currentUser?.mutedUsers?.map((id) => id.toString()) || [];
+        const following = user.following.map((f) => ({
+            _id: f._id,
+            username: f.username,
+            fullName: f.fullName,
+            profilePicture: f.profilePicture,
+            isVerified: f.isVerified || false,
+            isFollowing: req.user ? req.user.following.some((id) => id.toString() === f._id.toString()) : false,
+            isBlocked: blockedIds.includes(f._id.toString()),
+            isMuted: mutedIds.includes(f._id.toString()),
+        }));
+        res.status(200).json({ status: 'success', data: following });
+    }
+    catch (error) {
+        next(error);
+    }
+};
+exports.getUserFollowing = getUserFollowing;
+/**
+ * @desc    Search followers and following by query
+ * @route   GET /api/users/search-followers
+ * @access  Private
+ */
+const searchFollowersAndFollowing = async (req, res, next) => {
+    const query = req.query.q;
+    const currentUserId = req.user?._id;
+    try {
+        if (!currentUserId) {
+            res.status(401);
+            return next(new Error('Not authorized.'));
+        }
+        if (!query) {
+            return res.status(200).json({ status: 'success', data: [] });
+        }
+        const currentUser = await User_1.User.findById(currentUserId);
+        if (!currentUser) {
+            res.status(404);
+            return next(new Error('User not found.'));
+        }
+        const connectionIds = Array.from(new Set([
+            ...currentUser.followers.map(id => id.toString()),
+            ...currentUser.following.map(id => id.toString())
+        ]));
+        const users = await User_1.User.find({
+            _id: { $in: connectionIds },
+            $or: [
+                { username: { $regex: query, $options: 'i' } },
+                { fullName: { $regex: query, $options: 'i' } }
+            ]
+        }).select('username fullName profilePicture isVerified followers following');
+        const blockedIds = currentUser.blockedUsers?.map((id) => id.toString()) || [];
+        const mutedIds = currentUser.mutedUsers?.map((id) => id.toString()) || [];
+        const formatted = users.map((u) => ({
+            _id: u._id,
+            username: u.username,
+            fullName: u.fullName,
+            profilePicture: u.profilePicture,
+            isVerified: u.isVerified || false,
+            isFollowing: currentUser.following.some((id) => id.toString() === u._id.toString()),
+            isBlocked: blockedIds.includes(u._id.toString()),
+            isMuted: mutedIds.includes(u._id.toString()),
+        }));
+        res.status(200).json({ status: 'success', data: formatted });
+    }
+    catch (error) {
+        next(error);
+    }
+};
+exports.searchFollowersAndFollowing = searchFollowersAndFollowing;
+/**
+ * @desc    Remove a follower (make them unfollow you)
+ * @route   POST /api/users/:id/remove-follower
+ * @access  Private
+ */
+const removeFollower = async (req, res, next) => {
+    const targetId = req.params.id; // The follower to remove
+    const currentUserId = req.user?._id;
+    try {
+        const followerUser = await User_1.User.findById(targetId);
+        const currentUser = await User_1.User.findById(currentUserId);
+        if (!followerUser || !currentUser) {
+            res.status(404);
+            return next(new Error('User not found.'));
+        }
+        // Check if they are actually a follower
+        if (!currentUser.followers.includes(followerUser._id)) {
+            res.status(400);
+            return next(new Error('This user is not following you.'));
+        }
+        // Remove follower from current user's followers array
+        currentUser.followers = currentUser.followers.filter((id) => id.toString() !== followerUser._id.toString());
+        // Remove current user from follower's following array
+        followerUser.following = followerUser.following.filter((id) => id.toString() !== currentUser._id.toString());
+        await currentUser.save();
+        await followerUser.save();
+        // Broadcast unfollow/follow update in real-time
+        (0, socket_1.broadcastEvent)('follow_update', {
+            followerId: followerUser._id.toString(),
+            followingId: currentUser._id.toString(),
+            action: 'unfollow',
+        });
+        res.status(200).json({
+            status: 'success',
+            message: `Removed ${followerUser.username} from your followers.`,
+        });
+    }
+    catch (error) {
+        next(error);
+    }
+};
+exports.removeFollower = removeFollower;
+/**
+ * @desc    Block a user
+ * @route   POST /api/users/:id/block
+ * @access  Private
+ */
+const blockUser = async (req, res, next) => {
+    const targetId = req.params.id;
+    const currentUserId = req.user?._id;
+    try {
+        if (targetId === currentUserId?.toString()) {
+            res.status(400);
+            return next(new Error('You cannot block yourself.'));
+        }
+        const currentUser = await User_1.User.findById(currentUserId);
+        if (!currentUser) {
+            res.status(404);
+            return next(new Error('User not found.'));
+        }
+        if (!currentUser.blockedUsers) {
+            currentUser.blockedUsers = [];
+        }
+        if (!currentUser.blockedUsers.includes(targetId)) {
+            currentUser.blockedUsers.push(targetId);
+            await currentUser.save();
+        }
+        res.status(200).json({
+            success: true,
+            isBlocked: true,
+        });
+    }
+    catch (error) {
+        next(error);
+    }
+};
+exports.blockUser = blockUser;
+/**
+ * @desc    Unblock a user
+ * @route   POST /api/users/:id/unblock
+ * @access  Private
+ */
+const unblockUser = async (req, res, next) => {
+    const targetId = req.params.id;
+    const currentUserId = req.user?._id;
+    try {
+        const currentUser = await User_1.User.findById(currentUserId);
+        if (!currentUser) {
+            res.status(404);
+            return next(new Error('User not found.'));
+        }
+        if (currentUser.blockedUsers) {
+            currentUser.blockedUsers = currentUser.blockedUsers.filter((id) => id.toString() !== targetId);
+            await currentUser.save();
+        }
+        res.status(200).json({
+            success: true,
+            isBlocked: false,
+        });
+    }
+    catch (error) {
+        next(error);
+    }
+};
+exports.unblockUser = unblockUser;
+/**
+ * @desc    Mute a user
+ * @route   POST /api/users/:id/mute
+ * @access  Private
+ */
+const muteUser = async (req, res, next) => {
+    const targetId = req.params.id;
+    const currentUserId = req.user?._id;
+    try {
+        if (targetId === currentUserId?.toString()) {
+            res.status(400);
+            return next(new Error('You cannot mute yourself.'));
+        }
+        const currentUser = await User_1.User.findById(currentUserId);
+        if (!currentUser) {
+            res.status(404);
+            return next(new Error('User not found.'));
+        }
+        if (!currentUser.mutedUsers) {
+            currentUser.mutedUsers = [];
+        }
+        if (!currentUser.mutedUsers.includes(targetId)) {
+            currentUser.mutedUsers.push(targetId);
+            await currentUser.save();
+        }
+        res.status(200).json({
+            success: true,
+            isMuted: true,
+        });
+    }
+    catch (error) {
+        next(error);
+    }
+};
+exports.muteUser = muteUser;
+/**
+ * @desc    Unmute a user
+ * @route   POST /api/users/:id/unmute
+ * @access  Private
+ */
+const unmuteUser = async (req, res, next) => {
+    const targetId = req.params.id;
+    const currentUserId = req.user?._id;
+    try {
+        const currentUser = await User_1.User.findById(currentUserId);
+        if (!currentUser) {
+            res.status(404);
+            return next(new Error('User not found.'));
+        }
+        if (currentUser.mutedUsers) {
+            currentUser.mutedUsers = currentUser.mutedUsers.filter((id) => id.toString() !== targetId);
+            await currentUser.save();
+        }
+        res.status(200).json({
+            success: true,
+            isMuted: false,
+        });
+    }
+    catch (error) {
+        next(error);
+    }
+};
+exports.unmuteUser = unmuteUser;
+/**
+ * @desc    Get user profile by username including postsCount
+ * @route   GET /api/users/profile/:username
+ * @access  Public (Optional auth)
+ */
+const getUserProfileByUsername = async (req, res, next) => {
+    const { username } = req.params;
+    try {
+        const user = await User_1.User.findOne({ username: username.toLowerCase() });
+        if (!user) {
+            res.status(404);
+            return next(new Error('User not found.'));
+        }
+        const postsCount = await Post_1.Post.countDocuments({ user: user._id });
+        // Determine if the current authenticated user (if any) is following this profile
+        let isFollowing = false;
+        if (req.user) {
+            isFollowing = user.followers.some((f) => f.toString() === req.user?._id.toString());
+        }
+        res.status(200).json({
+            status: 'success',
+            data: {
+                _id: user._id,
+                username: user.username,
+                fullName: user.fullName,
+                bio: user.bio,
+                profilePicture: user.profilePicture,
+                followersCount: user.followers.length,
+                followingCount: user.following.length,
+                postsCount,
+                isFollowing,
+                createdAt: user.createdAt,
+            },
+        });
+    }
+    catch (error) {
+        next(error);
+    }
+};
+exports.getUserProfileByUsername = getUserProfileByUsername;
 //# sourceMappingURL=userController.js.map

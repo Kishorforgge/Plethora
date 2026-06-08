@@ -4,6 +4,7 @@ exports.deleteMessage = exports.editMessage = exports.sendMessage = exports.getC
 const Conversation_1 = require("../models/Conversation");
 const Message_1 = require("../models/Message");
 const User_1 = require("../models/User");
+const socket_1 = require("../socket");
 /**
  * @desc    List conversations for the current user
  * @route   GET /api/discussions
@@ -15,7 +16,29 @@ const getMyConversations = async (req, res, next) => {
             res.status(401);
             return next(new Error('Not authorized.'));
         }
-        const conversations = await Conversation_1.Conversation.find({ participants: req.user._id })
+        const { type } = req.query;
+        let query = {};
+        if (type === 'public') {
+            query = { isPublic: true };
+        }
+        else if (type === 'private') {
+            query = {
+                $or: [
+                    { isPublic: false },
+                    { isPublic: { $exists: false } }
+                ],
+                participants: req.user._id
+            };
+        }
+        else {
+            query = {
+                $or: [
+                    { isPublic: true },
+                    { participants: req.user._id }
+                ]
+            };
+        }
+        const conversations = await Conversation_1.Conversation.find(query)
             .populate('participants', 'username fullName profilePicture')
             .sort({ lastMessageAt: -1 });
         const data = await Promise.all(conversations.map(async (conv) => {
@@ -46,11 +69,33 @@ exports.getMyConversations = getMyConversations;
  * @access  Private
  */
 const createConversation = async (req, res, next) => {
-    const { participantIds, title, initialMessage } = req.body;
+    const { participantIds, title, initialMessage, isPublic } = req.body;
     try {
         if (!req.user) {
             res.status(401);
             return next(new Error('Not authorized.'));
+        }
+        if (isPublic) {
+            if (!title || !title.trim()) {
+                res.status(400);
+                return next(new Error('Room title is required for public discussions.'));
+            }
+            const conversation = await Conversation_1.Conversation.create({
+                title: title.trim(),
+                participants: [req.user._id],
+                isPublic: true,
+                lastMessageAt: new Date(),
+            });
+            if (initialMessage && typeof initialMessage === 'string' && initialMessage.trim()) {
+                await Message_1.Message.create({
+                    conversation: conversation._id,
+                    sender: req.user._id,
+                    text: initialMessage.trim(),
+                });
+            }
+            const populated = await Conversation_1.Conversation.findById(conversation._id).populate('participants', 'username fullName profilePicture');
+            res.status(201).json({ status: 'success', data: populated });
+            return;
         }
         if (!Array.isArray(participantIds) || participantIds.length === 0) {
             res.status(400);
@@ -80,6 +125,12 @@ const createConversation = async (req, res, next) => {
             });
         }
         const populated = await Conversation_1.Conversation.findById(conversation._id).populate('participants', 'username fullName profilePicture');
+        if (populated) {
+            // Notify participants
+            populated.participants.forEach((p) => {
+                (0, socket_1.notifyUser)(p._id.toString(), 'conversation_created', populated);
+            });
+        }
         res.status(201).json({ status: 'success', data: populated });
     }
     catch (error) {
@@ -103,7 +154,7 @@ const getConversationMessages = async (req, res, next) => {
             res.status(404);
             return next(new Error('Conversation not found.'));
         }
-        const isParticipant = conversation.participants.some((p) => (typeof p === 'object' && '_id' in p ? p._id : p).toString() === req.user._id.toString());
+        const isParticipant = conversation.isPublic || conversation.participants.some((p) => (typeof p === 'object' && '_id' in p ? p._id : p).toString() === req.user._id.toString());
         if (!isParticipant) {
             res.status(403);
             return next(new Error('You are not a participant in this conversation.'));
@@ -145,10 +196,17 @@ const sendMessage = async (req, res, next) => {
             res.status(404);
             return next(new Error('Conversation not found.'));
         }
-        const isParticipant = conversation.participants.some((p) => p.toString() === req.user._id.toString());
+        let isParticipant = conversation.participants.some((p) => p.toString() === req.user._id.toString());
         if (!isParticipant) {
-            res.status(403);
-            return next(new Error('You are not a participant in this conversation.'));
+            if (conversation.isPublic) {
+                conversation.participants.push(req.user._id);
+                await conversation.save();
+                isParticipant = true;
+            }
+            else {
+                res.status(403);
+                return next(new Error('You are not a participant in this conversation.'));
+            }
         }
         const message = await Message_1.Message.create({
             conversation: conversation._id,
@@ -158,6 +216,10 @@ const sendMessage = async (req, res, next) => {
         conversation.lastMessageAt = new Date();
         await conversation.save();
         const populated = await Message_1.Message.findById(message._id).populate('sender', 'username fullName profilePicture');
+        // Notify conversation participants
+        conversation.participants.forEach((participantId) => {
+            (0, socket_1.notifyUser)(participantId.toString(), 'new_message', populated);
+        });
         res.status(201).json({ status: 'success', data: populated });
     }
     catch (error) {

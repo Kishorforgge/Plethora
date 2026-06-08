@@ -11,6 +11,7 @@ router.get('/following', authMiddleware_1.protect, postController_1.getFollowing
 router.get('/me/uploads', authMiddleware_1.protect, postController_1.getMyUploads);
 router.get('/me/saved', authMiddleware_1.protect, postController_1.getMySaved);
 router.get('/me/liked', authMiddleware_1.protect, postController_1.getMyLiked);
+router.get('/user/:userId/uploads', authMiddleware_1.optionalProtect, postController_1.getUserUploads);
 router.get('/:id', authMiddleware_1.optionalProtect, postController_1.getPostById);
 // Protected routes
 router.post('/upload', authMiddleware_1.protect, uploadMiddleware_1.upload.single('image'), postController_1.createPost);

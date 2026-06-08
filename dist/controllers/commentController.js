@@ -1,9 +1,18 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteComment = exports.getCommentsByPost = exports.addComment = void 0;
+exports.updateComment = exports.deleteComment = exports.getCommentsByPost = exports.addComment = void 0;
 const Comment_1 = require("../models/Comment");
 const Post_1 = require("../models/Post");
 const Notification_1 = require("../models/Notification");
+const formatComment = (comment) => ({
+    _id: comment._id,
+    postId: comment.post,
+    userId: comment.user._id,
+    username: comment.user.username,
+    profilePicture: comment.user.profilePicture,
+    text: comment.text,
+    createdAt: comment.createdAt,
+});
 /**
  * @desc    Add a comment to a post
  * @route   POST /api/comments/:postId
@@ -42,7 +51,7 @@ const addComment = async (req, res, next) => {
         }
         res.status(201).json({
             status: 'success',
-            data: populatedComment,
+            data: formatComment(populatedComment),
         });
     }
     catch (error) {
@@ -58,7 +67,7 @@ exports.addComment = addComment;
 const getCommentsByPost = async (req, res, next) => {
     const { postId } = req.params;
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 20;
+    const limit = parseInt(req.query.limit) || 100;
     const skip = (page - 1) * limit;
     try {
         const postExists = await Post_1.Post.exists({ _id: postId });
@@ -69,7 +78,7 @@ const getCommentsByPost = async (req, res, next) => {
         const totalComments = await Comment_1.Comment.countDocuments({ post: postId });
         const comments = await Comment_1.Comment.find({ post: postId })
             .populate('user', 'username fullName profilePicture')
-            .sort({ createdAt: 1 }) // Chronological order
+            .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit);
         const totalPages = Math.ceil(totalComments / limit);
@@ -84,7 +93,7 @@ const getCommentsByPost = async (req, res, next) => {
                 totalPosts: totalComments,
                 hasMore,
             },
-            data: comments,
+            data: comments.map((c) => formatComment(c)),
         });
     }
     catch (error) {
@@ -111,11 +120,7 @@ const deleteComment = async (req, res, next) => {
             res.status(404);
             return next(new Error('Post associated with this comment not found.'));
         }
-        // Check authorization:
-        // Only the comment owner OR the post owner can delete the comment
-        const isCommentOwner = comment.user.toString() === userId?.toString();
-        const isPostOwner = post.user.toString() === userId?.toString();
-        if (!isCommentOwner && !isPostOwner) {
+        if (comment.user.toString() !== userId?.toString()) {
             res.status(403);
             return next(new Error('Not authorized to delete this comment.'));
         }
@@ -138,4 +143,36 @@ const deleteComment = async (req, res, next) => {
     }
 };
 exports.deleteComment = deleteComment;
+/**
+ * @desc    Update a comment
+ * @route   PUT /api/comments/:commentId
+ * @access  Private (comment owner only)
+ */
+const updateComment = async (req, res, next) => {
+    const { commentId } = req.params;
+    const { text } = req.body;
+    const userId = req.user?._id;
+    try {
+        const comment = await Comment_1.Comment.findById(commentId);
+        if (!comment) {
+            res.status(404);
+            return next(new Error('Comment not found.'));
+        }
+        if (comment.user.toString() !== userId?.toString()) {
+            res.status(403);
+            return next(new Error('Not authorized to update this comment.'));
+        }
+        comment.text = text.trim();
+        await comment.save();
+        const populatedComment = await comment.populate('user', 'username profilePicture');
+        res.status(200).json({
+            status: 'success',
+            data: formatComment(populatedComment),
+        });
+    }
+    catch (error) {
+        next(error);
+    }
+};
+exports.updateComment = updateComment;
 //# sourceMappingURL=commentController.js.map

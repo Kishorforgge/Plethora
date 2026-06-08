@@ -24,6 +24,10 @@ const MessageSchema = new mongoose_1.Schema({
         type: Boolean,
         default: false,
     },
+    read: {
+        type: Boolean,
+        default: false,
+    },
 }, { timestamps: true });
 MessageSchema.index({ conversation: 1, createdAt: 1 });
 exports.Message = (0, mongoose_1.model)('Message', MessageSchema);

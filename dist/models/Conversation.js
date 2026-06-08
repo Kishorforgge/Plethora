@@ -16,6 +16,10 @@ const ConversationSchema = new mongoose_1.Schema({
             required: true,
         },
     ],
+    isPublic: {
+        type: Boolean,
+        default: false,
+    },
     lastMessageAt: {
         type: Date,
         default: Date.now,

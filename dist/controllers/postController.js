@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.unbookmarkPost = exports.getMyLiked = exports.getMySaved = exports.getMyUploads = exports.bookmarkPost = exports.unlikePost = exports.likePost = exports.deletePost = exports.getPostById = exports.getPosts = exports.getFollowingFeed = exports.createPost = void 0;
+exports.getUserUploads = exports.unbookmarkPost = exports.getMyLiked = exports.getMySaved = exports.getMyUploads = exports.bookmarkPost = exports.unlikePost = exports.likePost = exports.deletePost = exports.getPostById = exports.getPosts = exports.getFollowingFeed = exports.createPost = void 0;
 const postService_1 = require("../services/postService");
 /**
  * @desc    Upload an image post
@@ -146,7 +146,7 @@ const likePost = async (req, res, next) => {
         res.status(200).json({
             status: 'success',
             message: 'Post liked successfully.',
-            likesCount,
+            data: { likesCount },
         });
     }
     catch (error) {
@@ -173,7 +173,7 @@ const unlikePost = async (req, res, next) => {
         res.status(200).json({
             status: 'success',
             message: 'Post unliked successfully.',
-            likesCount,
+            data: { likesCount },
         });
     }
     catch (error) {
@@ -280,4 +280,24 @@ const unbookmarkPost = async (req, res, next) => {
     }
 };
 exports.unbookmarkPost = unbookmarkPost;
+/**
+ * @desc    Fetch uploads by user ID
+ * @route   GET /api/posts/user/:userId/uploads
+ * @access  Public (Optional auth)
+ */
+const getUserUploads = async (req, res, next) => {
+    const { userId } = req.params;
+    try {
+        const posts = await postService_1.PostService.getPostsByUser(userId, req.user);
+        res.status(200).json({
+            status: 'success',
+            results: posts.length,
+            data: posts,
+        });
+    }
+    catch (error) {
+        next(error);
+    }
+};
+exports.getUserUploads = getUserUploads;
 //# sourceMappingURL=postController.js.map

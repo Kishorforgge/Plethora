@@ -48,6 +48,10 @@ const UserSchema = new mongoose_1.Schema({
         type: String,
         default: '',
     },
+    isVerified: {
+        type: Boolean,
+        default: false,
+    },
     followers: [
         {
             type: mongoose_1.Schema.Types.ObjectId,
@@ -64,6 +68,18 @@ const UserSchema = new mongoose_1.Schema({
         {
             type: mongoose_1.Schema.Types.ObjectId,
             ref: 'Post',
+        },
+    ],
+    blockedUsers: [
+        {
+            type: mongoose_1.Schema.Types.ObjectId,
+            ref: 'User',
+        },
+    ],
+    mutedUsers: [
+        {
+            type: mongoose_1.Schema.Types.ObjectId,
+            ref: 'User',
         },
     ],
 }, {
@@ -91,5 +107,6 @@ UserSchema.methods.matchPassword = async function (enteredPassword) {
     }
     return bcryptjs_1.default.compare(enteredPassword, this.password);
 };
+UserSchema.index({ username: 'text' });
 exports.User = (0, mongoose_1.model)('User', UserSchema);
 //# sourceMappingURL=User.js.map

@@ -7,14 +7,28 @@ const dns_1 = __importDefault(require("dns"));
 dns_1.default.setDefaultResultOrder("ipv4first");
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
+const http_1 = __importDefault(require("http"));
 const app_1 = __importDefault(require("./app"));
 const db_1 = require("./config/db");
+const socket_1 = require("./socket");
 const PORT = process.env.PORT || 5000;
 const startServer = async () => {
     try {
         // Connect database
         await (0, db_1.connectDB)();
-        const server = app_1.default.listen(PORT, () => {
+        const server = http_1.default.createServer(app_1.default);
+        // Get allowed origins matching app config
+        const rawClientUrl = process.env.CLIENT_URL || 'http://localhost:8080';
+        const clientUrl = rawClientUrl.endsWith('/') ? rawClientUrl.slice(0, -1) : rawClientUrl;
+        const allowedOrigins = [
+            clientUrl,
+            'http://localhost:8080',
+            'http://localhost:5173',
+            'http://localhost:3000'
+        ];
+        // Initialize Socket.IO
+        (0, socket_1.initSocket)(server, allowedOrigins);
+        server.listen(PORT, () => {
             console.log(`Server running in ${process.env.NODE_ENV || "development"} mode on http://localhost:${PORT}`);
             console.log(`[Config] CLIENT_URL: ${process.env.CLIENT_URL}`);
             console.log(`[Config] GOOGLE_CALLBACK_URL: ${process.env.GOOGLE_CALLBACK_URL}`);
