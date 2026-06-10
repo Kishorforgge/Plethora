@@ -11,6 +11,10 @@ const generateToken_1 = require("../utils/generateToken");
 const registerUser = async (req, res, next) => {
     const { username, email, password, fullName } = req.body;
     try {
+        if (/^(fallback|test|demo|seed|placeholder)/i.test(username)) {
+            res.status(400);
+            return next(new Error('This username is reserved or invalid. Please choose another username.'));
+        }
         // Check if user email or username already exists
         const userExists = await User_1.User.findOne({
             $or: [{ email: email.toLowerCase() }, { username: username.toLowerCase() }],

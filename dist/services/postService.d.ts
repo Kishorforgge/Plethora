@@ -9,7 +9,7 @@ export declare class PostService {
      * @param caption Optional caption text
      * @param tags Comma-separated string or array of tags
      */
-    static createPost(userId: string | Types.ObjectId, fileBuffer: Buffer, caption?: string, tags?: string | string[]): Promise<IPost>;
+    static createPost(userId: string | Types.ObjectId, fileBuffer: Buffer, caption?: string, tags?: string | string[], category?: string): Promise<IPost>;
     /**
      * Fetches posts based on filters with pagination, sorting, search queries, and optional current-user contextual likes/bookmarks status.
      */
@@ -18,6 +18,7 @@ export declare class PostService {
         limit: number;
         searchQuery?: string;
         tagQuery?: string;
+        categoryQuery?: string;
         currentUser?: any;
     }): Promise<{
         posts: {
@@ -31,6 +32,7 @@ export declare class PostService {
             tags: string[];
             likes: Types.ObjectId[];
             commentsCount: number;
+            category?: string;
             createdAt: Date;
             updatedAt: Date;
             _id: Types.ObjectId;
@@ -77,6 +79,7 @@ export declare class PostService {
             tags: string[];
             likes: Types.ObjectId[];
             commentsCount: number;
+            category?: string;
             createdAt: Date;
             updatedAt: Date;
             _id: Types.ObjectId;
@@ -114,6 +117,7 @@ export declare class PostService {
         tags: string[];
         likes: Types.ObjectId[];
         commentsCount: number;
+        category?: string;
         createdAt: Date;
         updatedAt: Date;
         _id: Types.ObjectId;

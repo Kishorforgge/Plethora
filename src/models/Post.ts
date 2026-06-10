@@ -8,6 +8,7 @@ export interface IPost extends Document {
   tags: string[];
   likes: Types.ObjectId[];
   commentsCount: number;
+  category?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -48,6 +49,14 @@ const PostSchema = new Schema<IPost>(
     commentsCount: {
       type: Number,
       default: 0,
+    },
+    category: {
+      type: String,
+      enum: [
+        'Architecture', 'Nature', 'Minimal', 'Interiors', 'Photography',
+        'Texture', 'Mood', 'Editorial', 'Object', 'Pattern', 'Light', 'Gaming'
+      ],
+      required: false,
     },
   },
   {

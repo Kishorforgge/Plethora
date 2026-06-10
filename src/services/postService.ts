@@ -18,7 +18,8 @@ export class PostService {
     userId: string | Types.ObjectId,
     fileBuffer: Buffer,
     caption: string = '',
-    tags?: string | string[]
+    tags?: string | string[],
+    category?: string
   ): Promise<IPost> {
     // Upload image buffer to Cloudinary
     const uploadResult = await uploadToCloudinary(fileBuffer, 'plethora/posts');
@@ -45,6 +46,7 @@ export class PostService {
       cloudinaryId: uploadResult.public_id,
       caption,
       tags: tagList,
+      category,
     });
 
     // Notify followers about new work (Instagram-style)
@@ -70,9 +72,10 @@ export class PostService {
     limit: number;
     searchQuery?: string;
     tagQuery?: string;
+    categoryQuery?: string;
     currentUser?: any;
   }) {
-    const { page, limit, searchQuery, tagQuery, currentUser } = options;
+    const { page, limit, searchQuery, tagQuery, categoryQuery, currentUser } = options;
     const skip = (page - 1) * limit;
 
     const filter: any = {};
@@ -83,8 +86,9 @@ export class PostService {
       const comments = await Comment.find({ text: { $regex: searchQuery, $options: 'i' } }).select('post');
       const postIdsFromComments = comments.map((c) => c.post);
 
-      // Find matching users (authors)
+      // Find matching users (authors), excluding dummy accounts
       const users = await User.find({
+        username: { $not: /^(fallback|test|demo|seed|placeholder)/i },
         $or: [
           { username: { $regex: searchQuery, $options: 'i' } },
           { fullName: { $regex: searchQuery, $options: 'i' } },
@@ -103,6 +107,11 @@ export class PostService {
     // Direct tag filter
     if (tagQuery) {
       filter.tags = tagQuery.toLowerCase().trim();
+    }
+
+    // Direct category filter (case-insensitive regex match)
+    if (categoryQuery) {
+      filter.category = { $regex: new RegExp(`^${categoryQuery.trim()}$`, 'i') };
     }
 
     const totalPosts = await Post.countDocuments(filter);

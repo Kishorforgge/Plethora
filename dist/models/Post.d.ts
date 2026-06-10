@@ -7,6 +7,7 @@ export interface IPost extends Document {
     tags: string[];
     likes: Types.ObjectId[];
     commentsCount: number;
+    category?: string;
     createdAt: Date;
     updatedAt: Date;
 }

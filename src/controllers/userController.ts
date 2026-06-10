@@ -222,7 +222,10 @@ export const getSuggestedCreators = async (req: AuthRequest, res: Response, next
       return next(new Error('Not authorized.'));
     }
 
-    const users = await User.find({ _id: { $ne: req.user._id } })
+    const users = await User.find({
+      _id: { $ne: req.user._id },
+      username: { $not: /^(fallback|test|demo|seed|placeholder)/i }
+    })
       .select('username fullName profilePicture bio followers following')
       .limit(40);
 
@@ -339,8 +342,9 @@ export const searchUsers = async (req: AuthRequest, res: Response, next: NextFun
       return res.status(200).json({ status: 'success', data: [] });
     }
 
-    // Regex match username or fullName
+    // Regex match username or fullName, excluding dummy accounts
     const users = await User.find({
+      username: { $not: /^(fallback|test|demo|seed|placeholder)/i },
       $or: [
         { username: { $regex: query, $options: 'i' } },
         { fullName: { $regex: query, $options: 'i' } },
@@ -383,6 +387,10 @@ export const getUserProfile = async (req: AuthRequest, res: Response, next: Next
   const { username } = req.params;
 
   try {
+    if (/^(fallback|test|demo|seed|placeholder)/i.test(username)) {
+      res.status(404);
+      return next(new Error('User not found.'));
+    }
     const user = await User.findOne({ username: username.toLowerCase() });
 
     if (!user) {
@@ -527,6 +535,7 @@ export const searchFollowersAndFollowing = async (req: AuthRequest, res: Respons
 
     const users = await User.find({
       _id: { $in: connectionIds },
+      username: { $not: /^(fallback|test|demo|seed|placeholder)/i },
       $or: [
         { username: { $regex: query, $options: 'i' } },
         { fullName: { $regex: query, $options: 'i' } }
@@ -757,6 +766,10 @@ export const getUserProfileByUsername = async (req: AuthRequest, res: Response, 
   const { username } = req.params;
 
   try {
+    if (/^(fallback|test|demo|seed|placeholder)/i.test(username)) {
+      res.status(404);
+      return next(new Error('User not found.'));
+    }
     const user = await User.findOne({ username: username.toLowerCase() });
 
     if (!user) {

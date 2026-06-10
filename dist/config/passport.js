@@ -51,13 +51,14 @@ passport_1.default.use(new passport_google_oauth20_1.Strategy({
         }
         // 3. Create a new user if one doesn't exist
         let username = (profile.displayName || '').replace(/\s+/g, '').toLowerCase();
-        if (!username) {
+        if (!username || /^(fallback|test|demo|seed|placeholder)/i.test(username)) {
             username = `googleuser${profile.id.substring(0, 6)}`;
         }
-        // Ensure username is unique
+        // Ensure username is unique and doesn't match dummy patterns
         let usernameExists = await User_1.User.findOne({ username });
-        if (usernameExists) {
-            username = `${username}${Math.floor(Math.random() * 10000)}`;
+        while (usernameExists || /^(fallback|test|demo|seed|placeholder)/i.test(username)) {
+            username = `googleuser${profile.id.substring(0, 6)}_${Math.floor(Math.random() * 10000)}`;
+            usernameExists = await User_1.User.findOne({ username });
         }
         user = await User_1.User.create({
             username,

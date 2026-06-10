@@ -15,7 +15,7 @@ class PostService {
      * @param caption Optional caption text
      * @param tags Comma-separated string or array of tags
      */
-    static async createPost(userId, fileBuffer, caption = '', tags) {
+    static async createPost(userId, fileBuffer, caption = '', tags, category) {
         // Upload image buffer to Cloudinary
         const uploadResult = await (0, uploadMiddleware_1.uploadToCloudinary)(fileBuffer, 'plethora/posts');
         // Parse tags (supporting comma-separated string or array of strings)
@@ -40,6 +40,7 @@ class PostService {
             cloudinaryId: uploadResult.public_id,
             caption,
             tags: tagList,
+            category,
         });
         // Notify followers about new work (Instagram-style)
         const author = await User_1.User.findById(userId).select('followers');
@@ -58,7 +59,7 @@ class PostService {
      * Fetches posts based on filters with pagination, sorting, search queries, and optional current-user contextual likes/bookmarks status.
      */
     static async getPosts(options) {
-        const { page, limit, searchQuery, tagQuery, currentUser } = options;
+        const { page, limit, searchQuery, tagQuery, categoryQuery, currentUser } = options;
         const skip = (page - 1) * limit;
         const filter = {};
         // Search filter (text search or regex in caption/tags, creator name/username, and comments text)
@@ -66,8 +67,9 @@ class PostService {
             // Find matching comments
             const comments = await Comment_1.Comment.find({ text: { $regex: searchQuery, $options: 'i' } }).select('post');
             const postIdsFromComments = comments.map((c) => c.post);
-            // Find matching users (authors)
+            // Find matching users (authors), excluding dummy accounts
             const users = await User_1.User.find({
+                username: { $not: /^(fallback|test|demo|seed|placeholder)/i },
                 $or: [
                     { username: { $regex: searchQuery, $options: 'i' } },
                     { fullName: { $regex: searchQuery, $options: 'i' } },
@@ -85,13 +87,19 @@ class PostService {
         if (tagQuery) {
             filter.tags = tagQuery.toLowerCase().trim();
         }
+        // Direct category filter (case-insensitive regex match)
+        if (categoryQuery) {
+            filter.category = { $regex: new RegExp(`^${categoryQuery.trim()}$`, 'i') };
+        }
         const totalPosts = await Post_1.Post.countDocuments(filter);
         const posts = await Post_1.Post.find(filter)
             .populate('user', 'username fullName profilePicture')
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit);
-        const formattedPosts = posts.map((post) => {
+        const formattedPosts = posts
+            .filter((post) => post.user)
+            .map((post) => {
             const isLiked = currentUser
                 ? post.likes.some((id) => id.toString() === currentUser._id.toString())
                 : false;
@@ -138,7 +146,9 @@ class PostService {
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit);
-        const formattedPosts = posts.map((post) => {
+        const formattedPosts = posts
+            .filter((post) => post.user)
+            .map((post) => {
             const isLiked = post.likes.some((id) => id.toString() === currentUser._id.toString());
             const isBookmarked = currentUser.bookmarks.some((id) => id.toString() === post._id.toString());
             return {
@@ -165,7 +175,7 @@ class PostService {
      */
     static async getPostById(postId, currentUser) {
         const post = await Post_1.Post.findById(postId).populate('user', 'username fullName profilePicture');
-        if (!post) {
+        if (!post || !post.user) {
             const error = new Error('Post not found.');
             error.statusCode = 404;
             throw error;
@@ -307,7 +317,9 @@ class PostService {
         await user.save();
     }
     static formatPostsForUser(posts, currentUser) {
-        return posts.map((post) => {
+        return posts
+            .filter((post) => post.user)
+            .map((post) => {
             const isLiked = currentUser
                 ? post.likes.some((id) => id.toString() === currentUser._id.toString())
                 : false;

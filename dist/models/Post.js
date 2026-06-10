@@ -38,6 +38,14 @@ const PostSchema = new mongoose_1.Schema({
         type: Number,
         default: 0,
     },
+    category: {
+        type: String,
+        enum: [
+            'Architecture', 'Nature', 'Minimal', 'Interiors', 'Photography',
+            'Texture', 'Mood', 'Editorial', 'Object', 'Pattern', 'Light', 'Gaming'
+        ],
+        required: false,
+    },
 }, {
     timestamps: true,
 });

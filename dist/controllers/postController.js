@@ -8,7 +8,7 @@ const postService_1 = require("../services/postService");
  * @access  Private
  */
 const createPost = async (req, res, next) => {
-    const { caption, tags } = req.body;
+    const { caption, tags, category } = req.body;
     try {
         if (!req.file) {
             res.status(400);
@@ -18,7 +18,20 @@ const createPost = async (req, res, next) => {
             res.status(401);
             return next(new Error('Not authorized.'));
         }
-        const post = await postService_1.PostService.createPost(req.user._id.toString(), req.file.buffer, caption, tags);
+        const allowedCategories = [
+            'Architecture', 'Nature', 'Minimal', 'Interiors', 'Photography',
+            'Texture', 'Mood', 'Editorial', 'Object', 'Pattern', 'Light', 'Gaming'
+        ];
+        if (category && !allowedCategories.some(c => c.toLowerCase() === category.trim().toLowerCase())) {
+            res.status(400);
+            return next(new Error('Invalid category specified.'));
+        }
+        // Match exact casing of allowed categories if matched
+        let normalizedCategory = undefined;
+        if (category) {
+            normalizedCategory = allowedCategories.find(c => c.toLowerCase() === category.trim().toLowerCase());
+        }
+        const post = await postService_1.PostService.createPost(req.user._id.toString(), req.file.buffer, caption, tags, normalizedCategory);
         res.status(201).json({
             status: 'success',
             data: post,
@@ -65,11 +78,13 @@ const getPosts = async (req, res, next) => {
         const limit = parseInt(req.query.limit) || 10;
         const searchQuery = req.query.q;
         const tagQuery = req.query.tag;
+        const categoryQuery = req.query.category;
         const { posts, pagination } = await postService_1.PostService.getPosts({
             page,
             limit,
             searchQuery,
             tagQuery,
+            categoryQuery,
             currentUser: req.user,
         });
         res.status(200).json({

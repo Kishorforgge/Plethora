@@ -195,7 +195,10 @@ const getSuggestedCreators = async (req, res, next) => {
             res.status(401);
             return next(new Error('Not authorized.'));
         }
-        const users = await User_1.User.find({ _id: { $ne: req.user._id } })
+        const users = await User_1.User.find({
+            _id: { $ne: req.user._id },
+            username: { $not: /^(fallback|test|demo|seed|placeholder)/i }
+        })
             .select('username fullName profilePicture bio followers following')
             .limit(40);
         const sorted = users
@@ -299,8 +302,9 @@ const searchUsers = async (req, res, next) => {
         if (!query) {
             return res.status(200).json({ status: 'success', data: [] });
         }
-        // Regex match username or fullName
+        // Regex match username or fullName, excluding dummy accounts
         const users = await User_1.User.find({
+            username: { $not: /^(fallback|test|demo|seed|placeholder)/i },
             $or: [
                 { username: { $regex: query, $options: 'i' } },
                 { fullName: { $regex: query, $options: 'i' } },
@@ -308,6 +312,8 @@ const searchUsers = async (req, res, next) => {
         })
             .select('username fullName profilePicture followers following')
             .limit(20);
+        console.log("Search query:", req.query.q);
+        console.log("Users found:", users.length);
         const formattedUsers = users.map((u) => ({
             _id: u._id,
             username: u.username,
@@ -338,6 +344,10 @@ exports.searchUsers = searchUsers;
 const getUserProfile = async (req, res, next) => {
     const { username } = req.params;
     try {
+        if (/^(fallback|test|demo|seed|placeholder)/i.test(username)) {
+            res.status(404);
+            return next(new Error('User not found.'));
+        }
         const user = await User_1.User.findOne({ username: username.toLowerCase() });
         if (!user) {
             res.status(404);
@@ -461,6 +471,7 @@ const searchFollowersAndFollowing = async (req, res, next) => {
         ]));
         const users = await User_1.User.find({
             _id: { $in: connectionIds },
+            username: { $not: /^(fallback|test|demo|seed|placeholder)/i },
             $or: [
                 { username: { $regex: query, $options: 'i' } },
                 { fullName: { $regex: query, $options: 'i' } }
@@ -661,6 +672,10 @@ exports.unmuteUser = unmuteUser;
 const getUserProfileByUsername = async (req, res, next) => {
     const { username } = req.params;
     try {
+        if (/^(fallback|test|demo|seed|placeholder)/i.test(username)) {
+            res.status(404);
+            return next(new Error('User not found.'));
+        }
         const user = await User_1.User.findOne({ username: username.toLowerCase() });
         if (!user) {
             res.status(404);
