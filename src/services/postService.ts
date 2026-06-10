@@ -113,22 +113,24 @@ export class PostService {
       .skip(skip)
       .limit(limit);
 
-    const formattedPosts = posts.map((post) => {
-      const isLiked = currentUser
-        ? post.likes.some((id: Types.ObjectId) => id.toString() === currentUser._id.toString())
-        : false;
+    const formattedPosts = posts
+      .filter((post) => post.user)
+      .map((post) => {
+        const isLiked = currentUser
+          ? post.likes.some((id: Types.ObjectId) => id.toString() === currentUser._id.toString())
+          : false;
 
-      const isBookmarked = currentUser
-        ? currentUser.bookmarks.some((id: Types.ObjectId) => id.toString() === post._id.toString())
-        : false;
+        const isBookmarked = currentUser
+          ? currentUser.bookmarks.some((id: Types.ObjectId) => id.toString() === post._id.toString())
+          : false;
 
-      return {
-        ...post.toObject(),
-        isLiked,
-        isBookmarked,
-        likesCount: post.likes.length,
-      };
-    });
+        return {
+          ...post.toObject(),
+          isLiked,
+          isBookmarked,
+          likesCount: post.likes.length,
+        };
+      });
 
     const totalPages = Math.ceil(totalPosts / limit);
     const hasMore = page < totalPages;
@@ -173,18 +175,20 @@ export class PostService {
       .skip(skip)
       .limit(limit);
 
-    const formattedPosts = posts.map((post) => {
-      const isLiked = post.likes.some((id) => id.toString() === currentUser._id.toString());
-      const isBookmarked = currentUser.bookmarks.some(
-        (id) => id.toString() === post._id.toString()
-      );
-      return {
-        ...post.toObject(),
-        isLiked,
-        isBookmarked,
-        likesCount: post.likes.length,
-      };
-    });
+    const formattedPosts = posts
+      .filter((post) => post.user)
+      .map((post) => {
+        const isLiked = post.likes.some((id) => id.toString() === currentUser._id.toString());
+        const isBookmarked = currentUser.bookmarks.some(
+          (id) => id.toString() === post._id.toString()
+        );
+        return {
+          ...post.toObject(),
+          isLiked,
+          isBookmarked,
+          likesCount: post.likes.length,
+        };
+      });
 
     const totalPages = Math.ceil(totalPosts / limit);
 
@@ -206,7 +210,7 @@ export class PostService {
   public static async getPostById(postId: string, currentUser?: any) {
     const post = await Post.findById(postId).populate('user', 'username fullName profilePicture');
 
-    if (!post) {
+    if (!post || !post.user) {
       const error = new Error('Post not found.');
       (error as any).statusCode = 404;
       throw error;
@@ -381,20 +385,22 @@ export class PostService {
   }
 
   private static formatPostsForUser(posts: IPost[], currentUser?: { _id: Types.ObjectId; bookmarks: Types.ObjectId[] }) {
-    return posts.map((post) => {
-      const isLiked = currentUser
-        ? post.likes.some((id) => id.toString() === currentUser._id.toString())
-        : false;
-      const isBookmarked = currentUser
-        ? currentUser.bookmarks.some((id) => id.toString() === post._id.toString())
-        : false;
-      return {
-        ...post.toObject(),
-        isLiked,
-        isBookmarked,
-        likesCount: post.likes.length,
-      };
-    });
+    return posts
+      .filter((post) => post.user)
+      .map((post) => {
+        const isLiked = currentUser
+          ? post.likes.some((id) => id.toString() === currentUser._id.toString())
+          : false;
+        const isBookmarked = currentUser
+          ? currentUser.bookmarks.some((id) => id.toString() === post._id.toString())
+          : false;
+        return {
+          ...post.toObject(),
+          isLiked,
+          isBookmarked,
+          likesCount: post.likes.length,
+        };
+      });
   }
 
   public static async getPostsByUser(userId: string, currentUser?: any) {

@@ -349,6 +349,9 @@ export const searchUsers = async (req: AuthRequest, res: Response, next: NextFun
       .select('username fullName profilePicture followers following')
       .limit(20);
 
+    console.log("Search query:", req.query.q);
+    console.log("Users found:", users.length);
+
     const formattedUsers = users.map((u) => ({
       _id: u._id,
       username: u.username,

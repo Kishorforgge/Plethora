@@ -266,6 +266,7 @@ export const sendMessage = async (req: AuthRequest, res: Response, next: NextFun
     );
 
     // Notify conversation participants
+    console.log("[Socket] Emitting new message", populated);
     conversation.participants.forEach((participantId) => {
       notifyUser(participantId.toString(), 'new_message', populated);
     });

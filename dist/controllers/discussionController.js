@@ -217,6 +217,7 @@ const sendMessage = async (req, res, next) => {
         await conversation.save();
         const populated = await Message_1.Message.findById(message._id).populate('sender', 'username fullName profilePicture');
         // Notify conversation participants
+        console.log("[Socket] Emitting new message", populated);
         conversation.participants.forEach((participantId) => {
             (0, socket_1.notifyUser)(participantId.toString(), 'new_message', populated);
         });
